@@ -2023,10 +2023,15 @@ EOF
   # Check for pkg(8) updates (non-blocking) – only on SCALE, not CORE
   ############################################################################
   if ! command -v freenas-update >/dev/null 2>&1; then
-    update_available=$( pkg version -v | grep -cF '<' 2>/dev/null );
-    if [[ $update_available -gt 0 ]]; then
-      echo "📦 ${update_available} Updates available: run 'sysupdate'"
-    fi
+    # Run package check in background to avoid blocking shell startup
+    {
+      update_available=$( pkg version -v | grep -cF '<' 2>/dev/null );
+      if [[ $update_available -gt 0 ]]; then
+        echo "📦 ${update_available} Updates available: run 'sysupdate'"
+      else
+        echo "📦 No updates available"
+      fi
+    } &
   fi
 
   # Enable new-mail notification for the session
