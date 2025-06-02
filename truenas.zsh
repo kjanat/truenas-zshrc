@@ -200,7 +200,7 @@ alias localip="ifconfig | grep -Eo 'inet (addr:)?([0-9]*\.){3}[0-9]*' | grep -Eo
 alias speedtest='curl -s https://raw.githubusercontent.com/sivel/speedtest-cli/master/speedtest.py | python'
 alias netports="sockstat -46lsc | sed -n '1p'; sockstat -46Llsc | sed '1d' | sort -uk6 -k2 -k5 -k7 | column -t"
 # shellcheck disable=SC2142
-alias listening=='(echo "SERVICE      PROTOCOL  PORT   ADDRESS";
+alias listening='(echo "SERVICE      PROTOCOL  PORT   ADDRESS";
 sockstat -46lLs | awk '\''
    /LISTEN/ && NR > 1 {
        port = $6; gsub(/.*:/, "", port)
