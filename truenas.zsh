@@ -31,6 +31,8 @@ else
     compinit -C
 fi
 
+set -euo pipefail
+
 # ============================================================================
 # TERMINAL PASTE MODE FIXES
 # ============================================================================
@@ -2029,6 +2031,8 @@ EOF
         update_available=$( pkg version -v | grep -cF '<' 2>/dev/null );
         if [[ $update_available -gt 0 ]]; then
           echo "📦 ${update_available} Updates available: run 'sysupdate'"
+        else
+          echo "📦 No updates available"
         fi
       fi
     } &
