@@ -300,7 +300,7 @@ get_load() {
 }
 
 # ZFS pool health indicator
-get_zfs_status() {
+get_zfs_quick_status() {
     local zfs_status_count
     zfs_status_count=$(zpool status -x 2>/dev/null | grep -v "errors: No known data errors\|all pools are healthy" | grep -icE "(errors|degraded|offline|repaired|unrecoverable)")
     if [[ $zfs_status_count -gt 0 ]]; then
@@ -355,7 +355,7 @@ precmd() {
     vcs_info
     # Cache system info for performance
     typeset -g _load_info="$(get_load)"
-    typeset -g _zfs_info="$(get_zfs_status)"
+    typeset -g _zfs_info="$(get_zfs_quick_status)"
     typeset -g _net_info="$(get_network)"
     typeset -g _battery_info="$(get_battery)"
 }
@@ -1250,6 +1250,22 @@ topmem() {
     ps -m | awk 'NR==1{print; next} $4>0{print}' | head -$((${1:-10}+1))
 }
 
+# ZFS pool health indicator
+get_zfs_status() {
+  if command -v zpool >/dev/null 2>&1; then
+    local zfs_output
+    zfs_output=$(zpool status -x 2>/dev/null)
+    if echo "$zfs_output" | grep -q "all pools are healthy"; then
+      echo "✅ ZFS: All pools are healthy"
+    elif echo "$zfs_output" | grep -q "no pools available" || [[ -z "$zfs_output" ]]; then
+      # Silent skip - we're in a jail without pool access or no output
+      :
+    else
+      echo "⚠️  ZFS: Check pool status with 'zhealth'"
+    fi
+  fi
+}
+
 # Service management helper
 # Replace the existing servstat function (around line 786) with this enhanced version
 
@@ -2001,11 +2017,7 @@ EOF
   ############################################################################
   # ZFS quick status (works even inside a jail – silently skips if no pools)
   ############################################################################
-  if zpool status -x | grep -iq "all pools are healthy" >/dev/null 2>&1; then
-    echo "✅ ZFS: All pools are healthy"
-  else
-      echo "⚠️  ZFS: Check pool status with 'zhealth'"
-  fi
+  get_zfs_status()
 
   ############################################################################
   # Check for pkg(8) updates (non-blocking) – only on SCALE, not CORE
