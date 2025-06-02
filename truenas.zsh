@@ -459,9 +459,10 @@ zstyle ':completion:*' completer _expand _complete _correct _approximate
 zstyle ':completion:*' format 'Completing %d'
 zstyle ':completion:*' group-name ''
 zstyle ':completion:*' menu select=2
-# shellcheck disable=SC2296
-zstyle ':completion:*:default' list-colors ${(s.:.)LS_COLORS}
+# Colorize completions using default `ls` colors. 
 zstyle ':completion:*' list-colors ''
+zstyle ':completion:*' list-colors "${(s.:.)LS_COLORS}"
+# zstyle ':completion:*:default' list-colors ${(s.:.)LS_COLORS}
 zstyle ':completion:*' list-prompt %SAt %p: Hit TAB for more, or the character to insert%s
 zstyle ':completion:*' matcher-list '' 'm:{a-z}={A-Z}' 'm:{a-zA-Z}={A-Za-z}' 'r:|[._-]=* r:|=* l:|=*'
 zstyle ':completion:*' menu select=long
@@ -615,7 +616,7 @@ _setup_ssh_completion() {
         zstyle ':completion:*:(ssh|scp|rsync|slogin|sftp):*:hosts-domain' ignored-patterns '<->.<->.<->.<->' '^[-[:alnum:]]##(.[-[:alnum:]]##)##' '*@*'
         zstyle ':completion:*:(ssh|scp|rsync|slogin|sftp):*:hosts-ipaddr' ignored-patterns '^(<->.<->.<->.<->|(|::)([[:xdigit:].]##:(#c,2))##(|%*))' '127.0.0.<->' '255.255.255.255' '::1' 'fe80::*'
 
-        echo "✅ SSH completion loaded ${#h[@]} hosts"
+        printf "\033[2mSSH completion loaded %d hosts\033[0m\n" ${#h[@]}
     fi
 }
 
