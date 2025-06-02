@@ -302,7 +302,7 @@ get_load() {
 # ZFS pool health indicator
 get_zfs_status() {
     local zfs_status_count
-    zfs_status_count=$(zpool status 2>/dev/null | grep -i -E "(errors|degraded|offline|repaired|unrecoverable)" | grep -vc "errors: No known data errors")
+    zfs_status_count=$(zpool status -x 2>/dev/null | grep -v "errors: No known data errors\|all pools are healthy" | grep -icE "(errors|degraded|offline|repaired|unrecoverable)")
     if [[ $zfs_status_count -gt 0 ]]; then
         echo "%F{red}⚠  ZFS%f"
     else
@@ -1197,19 +1197,19 @@ ports() {
 # Ultimate ZFS health check
 zhealth() {
     echo "🏊 === ZFS Pool Status ==="
-    zpool status -v
+    zpool status -x
 
     echo -e "\n📊 === Pool Space Usage ==="
     zpool list -o name,size,allocated,free,capacity,health
-
+ 
     echo -e "\n💾 === ZFS Datasets ==="
     zfs list -o name,used,available,refer,mountpoint,usedbychildren,usedbysnapshots,encryption,devices,usedbyrefreservation \
       -d 2 \
       -s name \
-      | grep -v '^freenas-boot/'
+      | grep -v '^freenas-boot/\|PoolONE/iocage/\|PoolONE/Volumes/\|FlashONE/iocage/\|FlashONE/Volumes/\|PoolONE/FreeNAS/AnonymousFTP'
 
     echo -e "\n📸 === Recent Snapshots ==="
-    zfs list -t snapshot -s creation | tail -10
+    zfs list -t snapshot -s creation | tail -5
 
     echo -e "\n⚡ === I/O Statistics ==="
     zpool iostat -v 1 1
@@ -1986,33 +1986,36 @@ EOF
   # Quick system status
   ############################################################################
   # Hostname, RAM, load‐average uptime, and current time in one neat line
+  if uptime -p >/dev/null 2>&1; then
+    up="$(uptime -p | sed 's/^up //')"          # GNU coreutils
+  else
+    up="$(uptime | awk -F'up |, *[0-9]+ user' '{print $2}')"  # BSD
+  fi
+
   printf "📍 %s | 💾 %.1f GB RAM | ⏰ %s | 🔄 %s\n" \
-         "$(hostname)" \
-         "$(( $(sysctl -n hw.physmem) / 1024 / 1024 / 1024.0 ))" \
-         "$(uptime -p | sed 's/^up //')" \
-         "$(date +'%H:%M:%S')"
+           "$(hostname)" \
+           "$(sysctl -n hw.physmem | awk '{printf "%.1f", $1/1024/1024/1024}')" \
+           "$up" \
+           "$(date +'%H:%M:%S')"
 
   ############################################################################
   # ZFS quick status (works even inside a jail – silently skips if no pools)
   ############################################################################
-  zfs_status=0                                # default: no problems / no ZFS
-  if zpool list > /dev/null 2>&1; then        # only enter when pools exist
-    zfs_status=$(zpool status 2>/dev/null \
-                 | grep -cE 'errors|DEGRADED|OFFLINE' || echo 0)
-  fi
-
-  if [[ zfs_status == 0 ]]; then
-    echo "✅ ZFS: All pools healthy"
-  else
+  zfs_status_count=$(zpool status -x 2>/dev/null | grep -v "errors: No known data errors\|all pools are healthy" | grep -icE "(errors|degraded|offline|repaired|unrecoverable)")
+  if [[ $zfs_status_count -gt 0 ]]; then
     echo "⚠️  ZFS: Check pool status with 'zhealth'"
+  else
+    echo "✅ ZFS: All pools healthy"
   fi
 
   ############################################################################
   # Check for pkg(8) updates (non-blocking) – only on SCALE, not CORE
   ############################################################################
   if ! command -v freenas-update >/dev/null 2>&1; then
-    ( pkg version -v 2>/dev/null | grep -q '<' &&
-      echo "📦 Updates available: run 'sysupdate'" ) &
+    update_available=$( pkg version -v | grep -cF '<' 2>/dev/null );
+    if [[ $update_available -gt 0 ]]; then
+      echo "📦 ${update_available} Updates available: run 'sysupdate'"
+    fi
   fi
 
   # Enable new-mail notification for the session
