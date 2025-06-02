@@ -2017,7 +2017,7 @@ EOF
   ############################################################################
   # ZFS quick status (works even inside a jail – silently skips if no pools)
   ############################################################################
-  get_zfs_status()
+  get_zfs_status
 
   ############################################################################
   # Check for pkg(8) updates (non-blocking) – only on SCALE, not CORE
