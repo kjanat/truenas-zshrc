@@ -52,7 +52,7 @@ setopt IGNORE_EOF                 # Don't exit on Ctrl+D during paste
 setopt INTERACTIVE_COMMENTS       # Allow comments in interactive shell
 
 # 4. Configure ZSH line editor to handle paste better
-if [[ -n "$ZLE_VERSION" ]]; then
+if [[ -n "${ZLE_VERSION:-}" ]]; then
     # Disable bracketed paste in ZLE
     zstyle ':bracketed-paste-magic' active-widgets '.false.'
     # Handle paste as regular input
@@ -193,15 +193,21 @@ alias iotop='iotop 2>/dev/null || iostat'
 alias nethogs='nethogs 2>/dev/null || echo "nethogs not installed"'
 
 # Network aliases
-alias myip="curl -s ifconfig.me"
+alias myip='printf "$(curl -s ifconfig.me)\n"'
 alias myipv4="curl -s ipv4.icanhazip.com"
 alias myipv6="curl -s ipv6.icanhazip.com"
 alias localip="ifconfig | grep -Eo 'inet (addr:)?([0-9]*\.){3}[0-9]*' | grep -Eo '([0-9]*\.){3}[0-9]*' | grep -v '127.0.0.1'"
 alias speedtest='curl -s https://raw.githubusercontent.com/sivel/speedtest-cli/master/speedtest.py | python'
 alias netports="sockstat -46lsc | sed -n '1p'; sockstat -46Llsc | sed '1d' | sort -uk6 -k2 -k5 -k7 | column -t"
 # shellcheck disable=SC2142
-alias listening='sockstat -46lsc | awk "NR==1{print; next} /[tu][cd]p/ && \$8>0 {print \$1, \$2, \$3, \$4, \$5, \$6, \$7, \$8}" | sort -k8 -k6 -k1 -k5 | column -t | grep "LISTEN\|FOREIGN"'
-alias tcpdump='tcpdump -nn'
+alias listening=='(echo "SERVICE      PROTOCOL  PORT   ADDRESS";
+sockstat -46lLs | awk '\''
+   /LISTEN/ && NR > 1 {
+       port = $6; gsub(/.*:/, "", port)
+       printf "%-12s %-9s %-6s %s\n", $2, $5, port, $6
+   }
+'\'' | sort -k3 -n | uniq)'
+alias tcpdump='sudo tcpdump -nn -tttt'
 
 # TrueNAS power aliases
 alias pools='zpool list -o name,size,allocated,free,capacity,health'
@@ -1184,14 +1190,74 @@ nettest() {
 
 # Enhanced ports function
 ports() {
-    echo "🔌 Open (non-local) ports:"
-    sockstat -4 -6 -L -l -s -U -c \
-      | awk '/[tu][cd]p/ {print $1, $2, $3, $4, $5, $6, $7, $8}' \
-      | sort -k8 -k6 -k1 -k5 \
-      | column -t \
-      | sed -E "s/(:[0-9]+)/$(printf '\033[1;31m')\1$(printf '\033[0m')/g"
-    echo "🌐 Established connections:"
-    sockstat -4 -6 -s -L | grep ESTABLISHED | wc -l | xargs echo "Active connections:"
+    local format="clean"  # default to clean format
+    
+    # Parse flags
+    while [[ $# -gt 0 ]]; do
+        case $1 in
+            -m|--minimal)
+                format="minimal"
+                shift
+                ;;
+            -s|--simple)
+                format="simple"
+                shift
+                ;;
+            -v|--verbose)
+                format="verbose"
+                shift
+                ;;
+            -h|--help)
+                echo "Usage: ports [OPTIONS]"
+                echo "  -m, --minimal   Show service and address only"
+                echo "  -s, --simple    Show service:port format"
+                echo "  -v, --verbose   Show detailed output with all columns"
+                echo "  -h, --help      Show this help"
+                echo ""
+                echo "Default: Clean formatted output"
+                return 0
+                ;;
+            *)
+                echo "Unknown option: $1"
+                echo "Use 'ports --help' for usage information"
+                return 1
+                ;;
+        esac
+    done
+    
+    case $format in
+        "minimal")
+            echo "🔌 Open Ports:"
+            sockstat -46lLs | awk 'NR > 1 && /LISTEN/ {print $2, $6}' | sort -u
+            ;;
+        "simple")
+            echo "🔌 Services:"
+            sockstat -46lLs | awk '
+                NR > 1 && /LISTEN/ {
+                    service = $2
+                    port = $6
+                    gsub(/.*:/, "", port)
+                    print service ":" port
+                }' | sort -u
+            ;;
+        "verbose")
+            echo "🔌 Open (non-local) ports:"
+            sockstat -46lLs | awk 'NR > 1 {printf "%-8s %-10s %5s %-20s %s\n", $1, $2, $3, $6, $7}' | sort
+            ;;
+        "clean"|*)
+            echo "🔌 Listening Services:"
+            sockstat -46lLs | awk '
+                NR > 1 && /LISTEN/ {
+                    service = $2
+                    port = $6
+                    gsub(/.*:/, "", port)
+                    printf "%-12s %-8s %s\n", service, port, $6
+                }' | sort -k2 -n | uniq
+            ;;
+    esac
+    
+    echo ""
+    echo "🌐 Active connections: $(sockstat -46sL | grep -c ESTABLISHED)"
 }
 
 # Ultimate ZFS health check
@@ -1226,17 +1292,17 @@ truenas_version() {
 # System info dashboard
 sysinfo() {
     echo "🖥️  === TrueNAS System Dashboard ==="
-    echo "📍 Hostname: $(hostname)"
-    echo "⏰ Uptime: $(uptime | awk -F, '{sub(".*up ",x,$1);print $1}' | sed 's/^ *//')"
-    echo "📈 Load: $(uptime | awk -F'load averages: ' '{print $2}')"
-    echo "💾 Memory: $(sysctl -n hw.physmem | awk '{printf "%.1f GB total", $1/1024/1024/1024}') | $(sysctl -n vm.stats.vm.v_free_count vm.stats.vm.v_page_size | awk 'NR==1{free=$1} NR==2{pagesize=$1} END{printf "%.1f GB free", (free*pagesize)/1024/1024/1024}')"
-    echo "💿 Root Disk: $(df -h / | awk 'NR==2 {print $3 "/" $2 " (" $5 ")"}')"
-    echo "🌡️ CPU Temp: $(sysctl -n hw.acpi.thermal.tz0.temperature 2>/dev/null | sed 's/C/°C/' || echo "N/A")"
-    echo "🔧 TrueNAS: $(truenas_version)"
-    echo "🐧 Kernel: $(uname -r)"
-    echo "🏃 Processes: $(ps -aux | wc -l)"
-    echo "👥 User sessions: $(who | wc -l)"
-    echo "🌐 IP: $(ifconfig | grep 'inet ' | grep -v '127.0.0.1' | head -1 | awk '{print $2}')"
+    printf "📍 %-15s %s\n" "Hostname:" "$(hostname)"
+    printf "⏰ %-15s %s\n" "Uptime:" "$(uptime | awk -F, '{sub(".*up ",x,$1);print $1}' | sed 's/^ *//')"
+    printf "📈 %-15s %s\n" "Load:" "$(uptime | awk -F'load averages: ' '{print $2}')"
+    printf "💾 %-15s %s\n" "Memory:" "$(sysctl -n hw.physmem | awk '{printf "%.1f GB total", $1/1024/1024/1024}') | $(sysctl -n vm.stats.vm.v_free_count vm.stats.vm.v_page_size | awk 'NR==1{free=$1} NR==2{pagesize=$1} END{printf "%.1f GB free", (free*pagesize)/1024/1024/1024}')"
+    printf "💿 %-15s %s\n" "Root Disk:" "$(df -h / | awk 'NR==2 {print $3 "/" $2 " (" $5 ")"}')"
+    printf "🌡️ %-15s %s\n" "CPU Temp:" "$(sysctl -n hw.acpi.thermal.tz0.temperature 2>/dev/null | sed 's/C/°C/' || echo "N/A")"
+    printf "🔧 %-15s %s\n" "TrueNAS:" "$(truenas_version)"
+    printf "🐧 %-15s %s\n" "Kernel:" "$(uname -r)"
+    printf "🏃 %-15s %s\n" "Processes:" "$(ps -aux | grep -v "USER PID %CPU %MEM VSZ RSS TT  STAT STARTED TIME COMMAND" | wc -l | xargs)"
+    printf "👥 %-15s %s\n" "User sessions:" "$(who | wc -l | xargs)"
+    printf "🌐 %-15s %s\n" "IP:" "$(ifconfig | grep 'inet ' | grep -v '127.0.0.1' | head -1 | awk '{print $2}')"
 }
 
 # Process management
@@ -2029,8 +2095,6 @@ EOF
         update_available=$( pkg version -v | grep -cF '<' 2>/dev/null );
         if [[ $update_available -gt 0 ]]; then
           echo "📦 ${update_available} Updates available: run 'sysupdate'"
-        else
-          echo "📦 No updates available"
         fi
       fi
     } &
