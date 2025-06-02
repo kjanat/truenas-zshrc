@@ -2026,12 +2026,12 @@ EOF
     # Run package check in background to avoid blocking shell startup
     {
       update_available=$( pkg version -v | grep -cF '<' 2>/dev/null );
-      if [[ $update_available -gt 0 ]]; then
-        echo "📦 ${update_available} Updates available: run 'sysupdate'"
-      else
-        echo "📦 No updates available"
-      fi
     } &
+    if [[ $update_available -gt 0 ]]; then
+      echo "📦 ${update_available} Updates available: run 'sysupdate'"
+    else
+      echo "📦 No updates available"
+    fi
   fi
 
   # Enable new-mail notification for the session
