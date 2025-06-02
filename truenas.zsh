@@ -268,9 +268,9 @@ alias ln='ln -i'
 # Funny aliases for typos
 alias sl='ls'
 alias cd..='cd ..'
-alias l='ls'
-alias ll='ls -la'
-alias lsl='ls -la'
+alias l='ls -AFG'
+alias ll='ls -lAFG'
+alias lsl='ls -lAFG'
 alias claer='clear'
 alias cealr='clear'
 alias clera='clear'
@@ -348,9 +348,9 @@ get_battery() {
 # Network connectivity indicator
 get_network() {
     if ping -c 1 8.8.8.8 &>/dev/null; then
-        echo "%F{green}🌐%f"
+        echo '%F{green}🌐%f'
     else
-        echo "%F{red}⚠ NET%f"
+        echo '%F{red}⚠ NET%f'
     fi
 }
 
@@ -459,7 +459,8 @@ zstyle ':completion:*' completer _expand _complete _correct _approximate
 zstyle ':completion:*' format 'Completing %d'
 zstyle ':completion:*' group-name ''
 zstyle ':completion:*' menu select=2
-# zstyle ':completion:*:default' list-colors ${(s.:.)LS_COLORS}
+# shellcheck disable=SC2296
+zstyle ':completion:*:default' list-colors ${(s.:.)LS_COLORS}
 zstyle ':completion:*' list-colors ''
 zstyle ':completion:*' list-prompt %SAt %p: Hit TAB for more, or the character to insert%s
 zstyle ':completion:*' matcher-list '' 'm:{a-z}={A-Z}' 'm:{a-zA-Z}={A-Za-z}' 'r:|[._-]=* r:|=* l:|=*'
@@ -1163,29 +1164,214 @@ dirsize() {
     du -sh "${1:-.}" | cut -f1
 }
 
-# Quick network test
+# Test NextDNS configuration
+test_nextdns() {
+    echo "🛡️  NextDNS Configuration Test:"
+    local config_id="861ad8"
+    local adblock_test_domain="doubleclick.net"
+
+    # Test NextDNS servers
+    local nextdns_servers=("45.90.28.20" "45.90.30.20")
+    echo "  📡 NextDNS Servers:"
+
+    # Get the first server from the list
+    if [[ -z "$config_id" ]]; then
+        echo "     ❌ No NextDNS configuration ID found"
+        return 1
+    fi
+    if [[ ${#nextdns_servers[@]} -eq 0 ]]; then
+        echo "     ❌ No NextDNS servers configured"
+        return 1
+    fi
+    echo "     Testing servers: ${nextdns_servers[*]}"
+    
+    for server in "${nextdns_servers[@]}"; do
+        typeset -F SECONDS=0
+        if timeout 2 nslookup google.com "$server" >/dev/null 2>&1; then
+            local duration_ms=$((SECONDS * 1000))
+
+            if [[ $duration_ms -lt 100 ]]; then
+                printf "     ✅ %s (\033[32m%.3f ms\033[0m)\n" "$server" "$duration_ms"
+            else
+                printf "     ⚠️  %s (\033[33m>100ms: \033[4m%.3f ms\033[0m)\n" "$server" "$duration_ms"
+            fi
+        else
+            printf "     ❌ %s (\033[31mtimeout\033[0m)\n" "$server"
+        fi
+    done
+
+    # Test NextDNS actual configuration
+    echo "  🔍 NextDNS Configuration Test:"
+    local test_endpoint
+    test_endpoint=$(curl --connect-timeout 3 --max-time 5 -sw $- https://test.nextdns.io/ | xargs 2>/dev/null)
+    # "https://$(curl -sw $- https://test.nextdns.io/).test.nextdns.io/"
+    if [[ -n "$test_endpoint" ]]; then
+        # local test_result
+        test_result=$(curl -s --connect-timeout 5 --max-time 10 "https://${test_endpoint}.test.nextdns.io/" 2>/dev/null)
+
+        if [[ -n "$test_result" ]]; then
+            local test_status protocol server client_name device_name src_ip device_ip
+
+            if command -v jq >/dev/null 2>&1; then
+                test_status=$(echo "$test_result" | jq -r '.status')
+                protocol=$(echo "$test_result" | jq -r '.protocol')
+                server=$(echo "$test_result" | jq -r '.server')
+                client_name=$(echo "$test_result" | jq -r '.clientName')
+                device_name=$(echo "$test_result" | jq -r '.deviceName')
+                src_ip=$(echo "$test_result" | jq -r '.srcIP')
+                device_ip=$(echo "$test_result" | jq -r '.deviceIP')
+            else
+                # Fallback to grep and cut if jq is not available
+                echo "    ⚠️  'jq' command not found, using fallback parsing"
+
+                # Fallback parsing
+                [[ -z "$test_status" ]] && test_status=$(echo "$test_result" | grep -o '"status":\s*"[^"]*"' | cut -d'"' -f4)
+                [[ -z "$protocol" ]] && protocol=$(echo "$test_result" | grep -o '"protocol":\s*"[^"]*"' | cut -d'"' -f4)
+                [[ -z "$server" ]] && server=$(echo "$test_result" | grep -o '"server":\s*"[^"]*"' | cut -d'"' -f4)
+                [[ -z "$client_name" ]] && client_name=$(echo "$test_result" | grep -o '"clientName":\s*"[^"]*"' | cut -d'"' -f4)
+                [[ -z "$device_name" ]] && device_name=$(echo "$test_result" | grep -o '"deviceName":\s*"[^"]*"' | cut -d'"' -f4)
+                [[ -z "$src_ip" ]] && src_ip=$(echo "$test_result" | grep -o '"srcIP":\s*"[^"]*"' | cut -d'"' -f4)
+                [[ -z "$device_ip" ]] && device_ip=$(echo "$test_result" | grep -o '"deviceIP":\s*"[^"]*"' | cut -d'"' -f4)
+            fi
+
+            if [[ "$test_status" == "ok" ]]; then
+                printf "     ✅ NextDNS Status: \033[32m%s\033[0m (📡 Protocol: \033[32m%s\033[0m, 🌍 Server: \033[32m%s\033[0m)\n" "$test_status" "$protocol" "$server"
+                # Implement using printf for better formatting
+                printf "        📱 Client:    \033[32m%s\033[0m\n" "$client_name"
+                printf "        🌐 Source IP: \033[32m%s\033[0m\n" "$src_ip"
+                printf "        🖥️  Device:    \033[32m%s\033[0m\n" "$device_name"
+                printf "        📍 Device IP: \033[32m%s\033[0m\n" "$device_ip"
+            else
+                printf "     ❌ NextDNS test failed: \033[31m%s\033[0m\n" "$test_status"
+            fi
+        else
+            printf "     ❌ No response from NextDNS test endpoint\n"
+        fi
+    else
+        printf "     ❌ Could not reach NextDNS test site\n"
+    fi
+    
+    # Test DNS-over-HTTPS endpoint
+    printf "  🔒 DoH Endpoint Test:  "
+    if curl -s --connect-timeout 3 --max-time 5 "https://dns.nextdns.io/${config_id}/resolve?name=google.com&type=A" >/dev/null 2>&1; then
+        printf "\033[32mDoH endpoint reachable\033[0m\n"
+    else
+        printf "\033[31mDoH endpoint failed\033[0m\n"
+    fi
+    
+    # Test blocking (try to resolve a known blocked domain)
+    printf "  🚫 Blocking Test:      "
+    if ! timeout 3 nslookup "$adblock_test_domain" ${nextdns_servers[1]} >/dev/null 2>&1; then
+        printf "\033[32mAd blocking working\033[0m\n"
+    elif curl --head --insecure --silent "https://$adblock_test_domain" | grep -i nextdns | xargs >/dev/null; then
+        printf "\033[32mAd blocking working. NextDNS block page detected.\033[0m\n"
+    else
+        printf "\033[31mAd blocking test failed\033[0m\n"
+    fi
+}
+
 nettest() {
-    echo "🌐 Testing network connectivity..."
-    if ping -c 3 8.8.8.8 >/dev/null 2>&1; then
+    printf "🌐 Testing network connectivity...\n\n"
+    local start_time=$(date +%s)
+    
+    # Internet connectivity test
+    if ping -c 3 -t 5 8.8.8.8 >/dev/null 2>&1; then
         echo "✅ Internet: OK"
     else
         echo "❌ Internet: Failed"
     fi
 
+    # Gateway test
     local gateway
-
     gateway=$(route -n get default 2>/dev/null | awk '/gateway:/ {print $2}' || netstat -rn | awk '/^default/ {print $2}' | head -1)
 
     if [[ -n $gateway ]]; then
-        if ping -c 3 "$gateway" >/dev/null 2>&1; then
+        if ping -c 3 -t 2 "$gateway" >/dev/null 2>&1; then
             echo "✅ Gateway ($gateway): OK"
         else
             echo "❌ Gateway ($gateway): Failed"
         fi
     fi
 
-    echo "📡 DNS Test:"
-    nslookup google.com >/dev/null 2>&1 && echo "✅ DNS: OK" || echo "❌ DNS: Failed"
+    echo "📡 DNS Configuration:"
+    
+    # Show domain info
+    local domain=$(awk '/^domain/ {print $2}' /etc/resolv.conf)
+    local search_domains=($(awk '/^search/ {for(i=2;i<=NF;i++) print $i}' /etc/resolv.conf))
+    
+    if [[ -n "$domain" ]]; then
+        echo "  🏠 Local domain: $domain"
+    fi
+    
+    if [[ ${#search_domains[@]} -gt 0 ]]; then
+        echo "  🔍 Search domains: ${search_domains[*]}"
+    fi
+    
+    # Test nameservers with timing
+    echo "  🌐 DNS Servers:"
+    local dns_servers=($(awk '/^nameserver/ {print $2}' /etc/resolv.conf))
+    
+    for dns_ip in "${dns_servers[@]}"; do
+        local start_time_dns=$(date +%s)
+        if timeout 3 nslookup google.com "$dns_ip" >/dev/null 2>&1; then
+            local end_time_dns=$(date +%s)
+            local duration=$((end_time_dns - start_time_dns))
+            if [[ $duration -eq 0 ]]; then
+                echo "    ✅ $dns_ip (<1s)"
+            else
+                echo "    ✅ $dns_ip (${duration}s)"
+            fi
+        else
+            echo "    ❌ $dns_ip (timeout)"
+        fi
+    done
+
+    # Test local domain resolution
+    if [[ -n "$domain" ]]; then
+        echo "  🏠 Local Domain Test:"
+        if timeout 3 nslookup "$(hostname).$domain" >/dev/null 2>&1; then
+            echo "    ✅ Local domain resolution: OK"
+        else
+            echo "    ⚠️  Local domain resolution: Unable to test"
+        fi
+    fi
+
+    echo "🌍 External Connectivity:"
+    
+    # External DNS test
+    if timeout 3 nslookup google.com >/dev/null 2>&1; then
+        echo "  ✅ External DNS: OK"
+    else
+        echo "  ❌ External DNS: Failed"
+    fi
+    
+    # HTTPS test
+    if curl -s --connect-timeout 3 --max-time 3 https://www.google.com >/dev/null 2>&1; then
+        echo "  ✅ HTTPS: OK"
+    else
+        echo "  ❌ HTTPS: Failed"
+    fi
+    
+    # Public IP
+    local public_ip=$(curl -s --connect-timeout 3 --max-time 3 https://ipinfo.io/ip 2>/dev/null)
+    if [[ -n "$public_ip" ]]; then
+        echo "  🌐 Public IP: $public_ip"
+    fi
+    
+    # Cloudflare DNS test
+    if timeout 3 nslookup google.com 1.1.1.1 >/dev/null 2>&1; then
+        echo "  ✅ Cloudflare DNS: OK"
+    else
+        echo "  ❌ Cloudflare DNS: Failed"
+    fi
+    
+    echo ""
+    # Test NextDNS
+    test_nextdns
+    
+    local end_time=$(date +%s)
+    echo ""
+    echo "⏱️  Test completed in $((end_time - start_time)) seconds"
 }
 
 # Enhanced ports function
