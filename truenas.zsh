@@ -2001,11 +2001,10 @@ EOF
   ############################################################################
   # ZFS quick status (works even inside a jail – silently skips if no pools)
   ############################################################################
-  zfs_status_count=$(zpool status -x 2>/dev/null | grep -v "errors: No known data errors\|all pools are healthy" | grep -icE "(errors|degraded|offline|repaired|unrecoverable)")
-  if [[ $zfs_status_count -gt 0 ]]; then
-    echo "⚠️  ZFS: Check pool status with 'zhealth'"
+  if zpool status -x | grep -iq "all pools are healthy" >/dev/null 2>&1; then
+    echo "✅ ZFS: All pools are healthy"
   else
-    echo "✅ ZFS: All pools healthy"
+      echo "⚠️  ZFS: Check pool status with 'zhealth'"
   fi
 
   ############################################################################
