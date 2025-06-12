@@ -120,20 +120,25 @@ init_terminal() {
     stty sane 2>/dev/null
 
     # Ensure critical keyboard shortcuts work
-    stty intr '^C' 2>/dev/null      # Ctrl+C for interrupt
-    stty susp '^Z' 2>/dev/null      # Ctrl+Z for suspend
-    stty eof '^D' 2>/dev/null       # Ctrl+D for EOF
-    stty start '^Q' 2>/dev/null     # Ctrl+Q for XON
-    stty stop '^S' 2>/dev/null      # Ctrl+S for XOFF
+    stty intr  '^C' 2>/dev/null      # Ctrl+C for interrupt
+    stty susp  '^Z' 2>/dev/null      # Ctrl+Z for suspend
+    stty eof   '^D' 2>/dev/null      # Ctrl+D for EOF
+    stty start '^Q' 2>/dev/null      # Ctrl+Q for XON
+    stty stop  '^S' 2>/dev/null      # Ctrl+S for XOFF
 
-    # Disable bracketed paste mode
-    printf '\e[?2004l' 2>/dev/null
+    # Disable bracketed paste mode,
+    # which means no unwanted characters like ~ or 201~ when pasting.
+    # Ususally it is enabled by default in modern terminals,
+    # because it is a good feature, as it allows pasting multiple
+    # lines without executing them immediately.
+    # However, it can cause issues with some terminal emulators.
+    # printf '\e[?2004l' 2>/dev/null  # Disabled the disabling of bracketed paste mode.
 
     # Ensure proper text display
     printf '\e[0m' 2>/dev/null      # Reset text attributes
 
     # Set UTF-8 support (if terminal supports it)
-    printf '\e%%G' 2>/dev/null
+    printf '\e%%G' 2>/dev/null      # Enable UTF-8 mode in terminal
 }
 
 # Run terminal initialization
@@ -187,7 +192,9 @@ alias df='df -h'
 alias du='du -h'
 alias free='freebsd_meminfo'
 alias ps='ps -aux'
-alias psg='ps -aux | grep -v grep | grep -i -e VSZ -e'
+psg() { ps -aux | grep -v "grep" | grep -i -- "$@"; }
+# alias psg='ps -aux | grep -v grep | grep --color=auto -i'
+
 # alias top='htop 2>/dev/null || top'
 alias iotop='iotop 2>/dev/null || iostat'
 alias nethogs='nethogs 2>/dev/null || echo "nethogs not installed"'
@@ -246,7 +253,6 @@ alias grep='grep --color=auto'
 alias egrep='egrep --color=auto'
 alias fgrep='fgrep --color=auto'
 alias histg='history | grep'
-alias psg='ps -aux | grep'
 
 # Quick shortcuts
 alias q='exit'
@@ -291,17 +297,18 @@ zstyle ':vcs_info:git:*' unstagedstr ' %F{red}●%f'
 zstyle ':vcs_info:*' check-for-changes true
 zstyle ':vcs_info:*' enable git
 
+
 # System load indicator
 get_load() {
     local load load_int
     load=$(uptime | awk -F 'load averages: ' '{print $2}' | awk '{print $1}' | sed 's/,//')
     load_int=${load%.*}
     if [[ $load_int -gt 2 ]]; then
-        echo "%F{red}⚠ ${load}%f"
+        printf "\033[31m⚠ %s\033[0m\n" "$load"   # Red
     elif [[ $load_int -gt 1 ]]; then
-        echo "%F{yellow}⚡ ${load}%f"
+        printf "\033[33m⚡ %s\033[0m\n" "$load"   # Yellow
     else
-        echo "%F{green}✓ ${load}%f"
+        printf "\033[32m✓ %s\033[0m\n" "$load"   # Green
     fi
 }
 
