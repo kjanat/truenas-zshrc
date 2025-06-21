@@ -486,7 +486,8 @@ convert_lscolors_to_ls_colors() {
     for ((i=0; i<${#file_types[@]} && i*2+1<${#lscolors}; i++)); do
         local fg_char="${lscolors:$((i*2)):1}"
         local bg_char="${lscolors:$((i*2+1)):1}"
-        local fg_code="" bg_code=""
+        local fg_code=""
+        local bg_code=""
         
         # Find foreground color
         for color in "${color_map[@]}"; do
@@ -503,7 +504,7 @@ convert_lscolors_to_ls_colors() {
                 # Convert to background code (add 10 to single digit, handle bold)
                 if [[ "$bg_code" =~ ^[0-9]$ ]]; then
                     bg_code="$((bg_code + 10))"
-                elif [[ "$bg_code" =~ ^1;[0-9]$ ]]; then
+                elif [[ "$bg_code" == 1\;[0-9] ]]; then
                     bg_code="1;$((${bg_code##*;} + 10))"
                 fi
                 break
