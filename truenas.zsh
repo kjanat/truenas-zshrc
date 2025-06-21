@@ -468,8 +468,81 @@ zstyle ':completion:*' group-name ''
 zstyle ':completion:*' menu select=2
 # Colorize completions using default `ls` colors. 
 zstyle ':completion:*' list-colors ''
-zstyle ':completion:*' list-colors "${(s.:.)LS_COLORS}"
-# zstyle ':completion:*:default' list-colors ${(s.:.)LS_COLORS}
+
+# Function to convert LSCOLORS (FreeBSD/macOS) to LS_COLORS (GNU/Linux) format
+convert_lscolors_to_ls_colors() {
+    local lscolors="$1"
+    local ls_colors=""
+    
+    # LSCOLORS format: pairs of foreground/background colors for each file type
+    # Order: directory, symlink, socket, pipe, executable, block special, char special,
+    #        executable with setuid, executable with setgid, directory writable by others with sticky,
+    #        directory writable by others without sticky
+    local file_types=("di" "ln" "so" "pi" "ex" "bd" "cd" "su" "sg" "tw" "ow")
+    
+    # Convert LSCOLORS color codes to ANSI codes
+    local color_map=("a:30" "b:31" "c:32" "d:33" "e:34" "f:35" "g:36" "h:37" "A:1;30" "B:1;31" "C:1;32" "D:1;33" "E:1;34" "F:1;35" "G:1;36" "H:1;37" "x:0")
+    
+    for ((i=0; i<${#file_types[@]} && i*2+1<${#lscolors}; i++)); do
+        local fg_char="${lscolors:$((i*2)):1}"
+        local bg_char="${lscolors:$((i*2+1)):1}"
+        local fg_code="" bg_code=""
+        
+        # Find foreground color
+        for color in "${color_map[@]}"; do
+            if [[ "${color%%:*}" == "$fg_char" ]]; then
+                fg_code="${color##*:}"
+                break
+            fi
+        done
+        
+        # Find background color
+        for color in "${color_map[@]}"; do
+            if [[ "${color%%:*}" == "$bg_char" ]]; then
+                bg_code="${color##*:}"
+                # Convert to background code (add 10 to single digit, handle bold)
+                if [[ "$bg_code" =~ ^[0-9]$ ]]; then
+                    bg_code="$((bg_code + 10))"
+                elif [[ "$bg_code" =~ ^1;[0-9]$ ]]; then
+                    bg_code="1;$((${bg_code##*;} + 10))"
+                fi
+                break
+            fi
+        done
+        
+        # Build LS_COLORS entry
+        if [[ -n "$fg_code" && "$bg_char" != "x" ]]; then
+            if [[ -n "$bg_code" && "$bg_char" != "x" ]]; then
+                ls_colors="${ls_colors}${file_types[i]}=${fg_code};${bg_code}:"
+            else
+                ls_colors="${ls_colors}${file_types[i]}=${fg_code}:"
+            fi
+        fi
+    done
+    
+    echo "${ls_colors%:}"  # Remove trailing colon
+}
+
+# Use LS_COLORS if available, convert LSCOLORS if available, with fallback for portability
+if [[ -n "$LS_COLORS" ]]; then
+    # ZSH-specific parameter expansion to split LS_COLORS by colons
+    zstyle ':completion:*' list-colors "${(@s/:/)LS_COLORS}"
+    zstyle ':completion:*:default' list-colors "${(@s/:/)LS_COLORS}"
+elif [[ -n "$LSCOLORS" ]]; then
+    # FreeBSD/TrueNAS uses LSCOLORS - convert to LS_COLORS format
+    local converted_colors
+    converted_colors=$(convert_lscolors_to_ls_colors "$LSCOLORS")
+    if [[ -n "$converted_colors" ]]; then
+        zstyle ':completion:*' list-colors "${(@s/:/)converted_colors}"
+        zstyle ':completion:*:default' list-colors "${(@s/:/)converted_colors}"
+    else
+        # Fallback if conversion fails
+        zstyle ':completion:*' list-colors 'di=34:ln=35:so=32:pi=33:ex=31:bd=34;46:cd=34;43:su=0;41:sg=0;46:tw=0;42:ow=0;43:'
+    fi
+else
+    # Fallback to default colors if neither LS_COLORS nor LSCOLORS is set
+    zstyle ':completion:*' list-colors 'di=34:ln=35:so=32:pi=33:ex=31:bd=34;46:cd=34;43:su=0;41:sg=0;46:tw=0;42:ow=0;43:'
+fi
 zstyle ':completion:*' list-prompt %SAt %p: Hit TAB for more, or the character to insert%s
 zstyle ':completion:*' matcher-list '' 'm:{a-z}={A-Z}' 'm:{a-zA-Z}={A-Za-z}' 'r:|[._-]=* r:|=* l:|=*'
 zstyle ':completion:*' menu select=long
