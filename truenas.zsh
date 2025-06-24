@@ -1977,7 +1977,6 @@ netinfo() {
     netstat -rn
 
     echo "=== DNS Servers ==="
-    # shellcheck disable=SC2002
     cat /etc/resolv.conf | grep nameserver
 
     echo "=== Open Connections ==="
@@ -2360,12 +2359,12 @@ EOF
     # Run package check in background to avoid blocking shell startup
     {
       if command -v pkg >/dev/null 2>&1; then
-        update_available=$( pkg version -v | grep -cF '<' 2>/dev/null );
-        if [[ $update_available -gt 0 ]]; then
+        update_available=$( pkg version -v 2>/dev/null | grep -cF '<' )
+        if [[ -n "$update_available" && "$update_available" -gt 0 ]]; then
           echo "📦 ${update_available} Updates available: run 'sysupdate'"
         fi
       fi
-    } &
+    } 2>/dev/null | grep -v '^$' &
   fi
 
   # Enable new-mail notification for the session
