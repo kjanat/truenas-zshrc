@@ -1,3 +1,4 @@
+#!/usr/bin/env zsh
 # ██╗   ██╗██╗  ████████╗██╗███╗   ███╗ █████╗ ████████╗███████╗
 # ██║   ██║██║  ╚══██╔══╝██║████╗ ████║██╔══██╗╚══██╔══╝██╔════╝
 # ██║   ██║██║     ██║   ██║██╔████╔██║███████║   ██║   █████╗
@@ -899,21 +900,21 @@ mkcd() {
 extract() {
     if [ -f $1 ] ; then
         case $1 in
-            *.tar.bz2)   tar xjf $1     ;;
-            *.tar.gz)    tar xzf $1     ;;
-            *.tar.xz)    tar xJf $1     ;;
-            *.bz2)       bunzip2 $1     ;;
-            *.rar)       unrar x $1     ;;
-            *.gz)        gunzip $1      ;;
-            *.tar)       tar xf $1      ;;
-            *.tbz2)      tar xjf $1     ;;
-            *.tgz)       tar xzf $1     ;;
-            *.zip)       unzip $1       ;;
-            *.Z)         uncompress $1  ;;
-            *.7z)        7z x $1        ;;
-            *.deb)       ar x $1        ;;
-            *.tar.zst)   tar xf $1      ;;
-            *)           echo "'$1' cannot be extracted via extract()" ;;
+            *.tar.bz2)   tar xjf "$1"     ;;
+            *.tar.gz)    tar xzf "$1"     ;;
+            *.tar.xz)    tar xJf "$1"     ;;
+            *.bz2)       bunzip2 "$1"     ;;
+            *.rar)       unrar x "$1"     ;;
+            *.gz)        gunzip "$1"      ;;
+            *.tar)       tar xf "$1"      ;;
+            *.tbz2)      tar xjf "$1"     ;;
+            *.tgz)       tar xzf "$1"     ;;
+            *.zip)       unzip "$1"       ;;
+            *.Z)         uncompress "$1"  ;;
+            *.7z)        7z x "$1"        ;;
+            *.deb)       ar x "$1"        ;;
+            *.tar.zst)   tar xf "$1"      ;;
+            *)           printf "'%s' cannot be extracted via extract()" "$1" ;;
         esac
     else
         echo "'$1' is not a valid file"
@@ -1343,7 +1344,7 @@ test_nextdns() {
     
     # Test blocking (try to resolve a known blocked domain)
     printf "  🚫 Blocking Test:      "
-    if ! timeout 3 nslookup "$adblock_test_domain" ${nextdns_servers[1]} >/dev/null 2>&1; then
+    if ! timeout 3 nslookup "$adblock_test_domain" "${nextdns_servers[1]}" >/dev/null 2>&1; then
         printf "\033[32mAd blocking working\033[0m\n"
     elif curl --head --insecure --silent "https://$adblock_test_domain" | grep -i nextdns | xargs >/dev/null; then
         printf "\033[32mAd blocking working. NextDNS block page detected.\033[0m\n"
@@ -1757,7 +1758,7 @@ _servstat_single_service() {
             if [[ -n "$pids" ]]; then
                 echo "PIDs: $pids"
                 echo "Memory Usage:"
-                ps -o pid,pcpu,pmem,vsz,rss,comm -p $pids 2>/dev/null | head -10
+                ps -o pid,pcpu,pmem,vsz,rss,comm -p "$pids" 2>/dev/null | head -10
             else
                 echo "No processes found (service may use different process names)"
             fi
@@ -1951,7 +1952,7 @@ logwatch() {
 temps() {
     echo "🌡️  System Temperatures:"
     for sensor in $(sysctl -a | grep temperature | cut -d: -f1); do
-        temp=$(sysctl -n $sensor 2>/dev/null)
+        temp=$(sysctl -n "$sensor" 2>/dev/null)
         if [[ -n $temp ]]; then
             echo "$sensor: $temp"
         fi
@@ -1962,7 +1963,7 @@ temps() {
 diskusage() {
     echo "💾 Disk Usage Analysis:"
     echo "=== Top 10 largest directories ==="
-    du -h --max-depth=1 ${1:-.} 2>/dev/null | sort -hr | head -10
+    du -h --max-depth=1 "${1:-.}" 2>/dev/null | sort -hr | head -10
     echo "=== Disk space by filesystem ==="
     df -h | grep -v tmpfs | grep -v udev
 }
@@ -2364,7 +2365,7 @@ EOF
           echo "📦 ${update_available} Updates available: run 'sysupdate'"
         fi
       fi
-    } 2>/dev/null | grep -v '^$' &
+    } &
   fi
 
   # Enable new-mail notification for the session
