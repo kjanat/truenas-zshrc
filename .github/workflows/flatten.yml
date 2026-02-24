@@ -1,0 +1,36 @@
+name: Flatten to single file
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - "truenas.zsh"
+      - "lib/**"
+      - "scripts/flatten.sh"
+
+permissions:
+  contents: write
+
+jobs:
+  flatten:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build flat file
+        run: |
+          chmod +x scripts/flatten.sh
+          scripts/flatten.sh > truenas-flat.zsh
+
+      - name: Deploy to flat branch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout --orphan flat-tmp
+          git rm -rf .
+          mv truenas-flat.zsh truenas.zsh
+          git add truenas.zsh
+          git commit -m "Flatten $(git rev-parse --short HEAD~0 2>/dev/null || echo 'initial')"
+          git branch -D flat 2>/dev/null || true
+          git branch -m flat
+          git push origin flat --force
