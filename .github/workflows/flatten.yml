@@ -7,6 +7,7 @@ on:
       - "truenas.zsh"
       - "lib/**"
       - "scripts/flatten.sh"
+      - ".github/workflows/flatten.yml"
 
 permissions:
   contents: write
@@ -22,6 +23,37 @@ jobs:
           chmod +x scripts/flatten.sh
           scripts/flatten.sh > truenas-flat.zsh
 
+      - name: Build flat README
+        run: |
+          sha="$(git rev-parse --short HEAD)"
+          cat > flat-README.md <<EOF
+          # truenas-zshrc (flat)
+
+          Single-file build of [truenas-zshrc](https://github.com/kjanat/truenas-zshrc) — auto-generated from \`master\` by CI.
+
+          ## Usage
+
+          \`\`\`sh
+          source <(curl -fsSL https://raw.githubusercontent.com/kjanat/truenas-zshrc/flat/truenas.zsh)
+          \`\`\`
+
+          Or save locally:
+
+          \`\`\`sh
+          curl -fsSL https://raw.githubusercontent.com/kjanat/truenas-zshrc/flat/truenas.zsh -o ~/.zshrc.truenas
+          echo 'source ~/.zshrc.truenas' >> ~/.zshrc
+          \`\`\`
+
+          ## About
+
+          This branch contains a single \`truenas.zsh\` with all \`lib/*.zsh\` modules inlined.
+          Do not edit this branch directly — changes are overwritten on every push to [\`master\`](https://github.com/kjanat/truenas-zshrc/tree/master).
+
+          Built from [\`${sha}\`](https://github.com/kjanat/truenas-zshrc/commit/${sha}).
+          EOF
+          # strip leading whitespace from heredoc
+          sed -i 's/^          //' flat-README.md
+
       - name: Deploy to flat branch
         run: |
           git config user.name "github-actions[bot]"
@@ -29,7 +61,8 @@ jobs:
           git checkout --orphan flat-tmp
           git rm -rf .
           mv truenas-flat.zsh truenas.zsh
-          git add truenas.zsh
+          mv flat-README.md README.md
+          git add truenas.zsh README.md
           git commit -m "Flatten $(git rev-parse --short HEAD~0 2>/dev/null || echo 'initial')"
           git branch -D flat 2>/dev/null || true
           git branch -m flat
