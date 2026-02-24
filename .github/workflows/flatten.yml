@@ -56,14 +56,21 @@ jobs:
 
       - name: Deploy to flat branch
         run: |
+          SOURCE_SHA="$(git rev-parse --short HEAD)"
+          SOURCE_MSG="$(git log -1 --format='%s')"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git checkout --orphan flat-tmp
-          git rm -rf .
+          git fetch origin flat:flat 2>/dev/null || git checkout --orphan flat
+          git checkout flat
+          # Replace contents
+          git rm -rf . 2>/dev/null || true
           mv truenas-flat.zsh truenas.zsh
           mv flat-README.md README.md
           git add truenas.zsh README.md
-          git commit -m "Flatten $(git rev-parse --short HEAD~0 2>/dev/null || echo 'initial')"
-          git branch -D flat 2>/dev/null || true
-          git branch -m flat
-          git push origin flat --force
+          # Skip commit if nothing changed
+          if git diff --cached --quiet; then
+            echo "No changes to flat branch"
+            exit 0
+          fi
+          git commit -m "Flatten ${SOURCE_SHA}: ${SOURCE_MSG}"
+          git push origin flat
