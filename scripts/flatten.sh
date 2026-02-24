@@ -4,7 +4,7 @@
 set -euo pipefail
 
 root="$(cd "$(dirname "$0")/.." && pwd)"
-entry="$root/truenas.zsh"
+entry="${root}/truenas.zsh"
 
 # Redirect header
 cat <<'HEADER'
@@ -17,17 +17,17 @@ HEADER
 
 while IFS= read -r line; do
 	# Match: source "${0:A:h}/lib/something.zsh"
-	if [[ "$line" =~ ^source\ \"\$\{0:A:h\}/lib/(.+\.zsh)\"$ ]]; then
-		lib_file="$root/lib/${BASH_REMATCH[1]}"
-		if [[ -f "$lib_file" ]]; then
+	if [[ "${line}" =~ ^source\ \"\$\{0:A:h\}/lib/(.+\.zsh)\"$ ]]; then
+		lib_file="${root}/lib/${BASH_REMATCH[1]}"
+		if [[ -f "${lib_file}" ]]; then
 			echo ""
 			echo "# ======================================== ${BASH_REMATCH[1]} ========================================"
-			cat "$lib_file"
+			cat "${lib_file}"
 		else
-			echo "# WARNING: $lib_file not found" >&2
-			echo "$line"
+			echo "# WARNING: ${lib_file} not found" >&2
+			echo "${line}"
 		fi
 	else
-		echo "$line"
+		echo "${line}"
 	fi
-done <"$entry"
+done <"${entry}"
