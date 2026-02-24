@@ -1,6 +1,6 @@
 # truenas-zshrc
 
-ZSH configuration for TrueNAS (CORE/SCALE). Modular setup with ZFS-aware prompt, system monitoring, and FreeBSD-compatible completions.
+ZSH configuration for TrueNAS CORE (FreeBSD-based). Modular setup with ZFS-aware prompt, system monitoring, and FreeBSD-native completions.
 
 ## Source Directly (single file, no clone)
 
@@ -63,6 +63,6 @@ lib/
 - ZFS-aware prompt (pool health indicator, scrub status)
 - System load/network/battery status in prompt
 - SSH host completion from `~/.ssh/config` and `known_hosts`
-- FreeBSD + Linux compatible (LSCOLORS/LS_COLORS conversion)
+- FreeBSD-native (LSCOLORS/LS_COLORS conversion)
 - Plugin manager with git-based install/update
 - 100+ aliases for ZFS, networking, navigation, and system admin

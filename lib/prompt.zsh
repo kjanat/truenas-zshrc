@@ -38,21 +38,9 @@ get_zfs_quick_status() {
 	fi
 }
 
-# Battery status (if applicable)
+# Battery status (ACPI on FreeBSD)
 get_battery() {
-	# Check for Linux battery info
-	if [[ -f /sys/class/power_supply/BAT0/capacity ]]; then
-		local battery
-		battery=$(cat /sys/class/power_supply/BAT0/capacity)
-		if [[ $battery -lt 20 ]]; then
-			echo "%F{red}🔋 ${battery}%%%f"
-		elif [[ $battery -lt 50 ]]; then
-			echo "%F{yellow}🔋 ${battery}%%%f"
-		else
-			echo "%F{green}🔋 ${battery}%%%f"
-		fi
-	# Check for FreeBSD battery info (ACPI)
-	elif command -v acpiconf > /dev/null 2>&1; then
+	if command -v acpiconf > /dev/null 2>&1; then
 		local battery
 		battery=$(acpiconf -i 0 2> /dev/null | awk '/Remaining capacity:/ {gsub(/%/, "", $3); print $3}')
 		if [[ -n $battery ]]; then

@@ -89,19 +89,16 @@ if [[ $- == *i* && -z $ZSH_BANNER_SHOWN ]]; then
 	get_zfs_status
 
 	############################################################################
-	# Check for pkg(8) updates (non-blocking) – only on SCALE, not CORE
+	# Check for freenas-update (non-blocking)
 	############################################################################
-	if ! command -v freenas-update > /dev/null 2>&1; then
-		# Run package check in background to avoid blocking shell startup
-		{
-			if command -v pkg > /dev/null 2>&1; then
-				update_available=$(pkg version -v 2> /dev/null | grep -cF '<')
-				if [[ -n $update_available && $update_available -gt 0 ]]; then
-					echo "📦 ${update_available} Updates available: run 'sysupdate'"
-				fi
+	{
+		if command -v freenas-update > /dev/null 2>&1; then
+			update_output=$(freenas-update check 2>/dev/null)
+			if [[ $? -eq 0 && -n "$update_output" ]]; then
+				echo "📦 System update available: run 'freenas-update'"
 			fi
-		} &
-	fi
+		fi
+	} &
 
 	# Enable new-mail notification for the session
 	export MAIL="/var/mail/$USER"
