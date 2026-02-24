@@ -2,6 +2,15 @@
 
 ZSH configuration for TrueNAS CORE (FreeBSD-based). Modular setup with ZFS-aware prompt, system monitoring, and FreeBSD-native completions.
 
+## Prerequisites
+
+```csh
+pkg install -y zsh git nano curl jq tree
+chsh -s /usr/local/bin/zsh
+```
+
+`zsh` and `git` are required. The rest are optional but used by aliases and functions (`nano` as default editor, `curl` for IP lookups/speedtest, `jq` for JSON parsing in netstat, `tree` for directory listing).
+
 ## Install
 
 All `lib/*.zsh` modules are auto-inlined into a single file on the [`flat`](https://github.com/kjanat/truenas-zshrc/tree/flat) branch by CI.
