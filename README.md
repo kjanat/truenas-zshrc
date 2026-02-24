@@ -2,24 +2,47 @@
 
 ZSH configuration for TrueNAS CORE (FreeBSD-based). Modular setup with ZFS-aware prompt, system monitoring, and FreeBSD-native completions.
 
-## One-liner (flat file, no clone)
+## Install
 
-All `lib/*.zsh` modules are auto-inlined into a single file on the `flat` branch by CI.
+All `lib/*.zsh` modules are auto-inlined into a single file on the [`flat`](https://github.com/kjanat/truenas-zshrc/tree/flat) branch by CI.
+
+### From csh/tcsh (TrueNAS CORE default)
 
 ```csh
 fetch -qo ~/.zshrc.truenas https://raw.githubusercontent.com/kjanat/truenas-zshrc/flat/truenas.zsh
 echo 'source ~/.zshrc.truenas' >> ~/.zshrc
 ```
 
-Add to `.zshrc` for auto-updating on every shell start:
+### From sh
+
+```sh
+fetch -qo ~/.zshrc.truenas https://raw.githubusercontent.com/kjanat/truenas-zshrc/flat/truenas.zsh
+echo 'source ~/.zshrc.truenas' >> ~/.zshrc
+```
+
+### From zsh
+
+```zsh
+fetch -qo ~/.zshrc.truenas https://raw.githubusercontent.com/kjanat/truenas-zshrc/flat/truenas.zsh
+echo 'source ~/.zshrc.truenas' >> ~/.zshrc
+```
+
+Or auto-update on every shell start (add to `.zshrc`):
 
 ```zsh
 source <(fetch -qo - https://raw.githubusercontent.com/kjanat/truenas-zshrc/flat/truenas.zsh)
 ```
 
-## Quick Install (git clone)
+### From bash
 
-```csh
+```bash
+curl -fsSLo ~/.zshrc.truenas https://raw.githubusercontent.com/kjanat/truenas-zshrc/flat/truenas.zsh
+echo 'source ~/.zshrc.truenas' >> ~/.zshrc
+```
+
+### Git clone (any shell)
+
+```sh
 git clone https://github.com/kjanat/truenas-zshrc.git ~/.zsh/truenas
 echo 'source ~/.zsh/truenas/truenas.zsh' >> ~/.zshrc
 ```
