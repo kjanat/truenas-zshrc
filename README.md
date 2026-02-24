@@ -1,0 +1,60 @@
+# truenas-zshrc
+
+ZSH configuration for TrueNAS (CORE/SCALE). Modular setup with ZFS-aware prompt, system monitoring, and FreeBSD-compatible completions.
+
+## Quick Install
+
+```sh
+# Clone and source from .zshrc
+git clone https://github.com/kjanat/truenas-zshrc.git ~/.zsh/truenas
+echo 'source ~/.zsh/truenas/truenas.zsh' >> ~/.zshrc
+```
+
+## One-liner (curl)
+
+```sh
+mkdir -p ~/.zsh/truenas/lib && \
+curl -fsSL https://raw.githubusercontent.com/kjanat/truenas-zshrc/master/truenas.zsh -o ~/.zsh/truenas/truenas.zsh && \
+for f in aliases completion functions history keybindings options plugins prompt; do \
+  curl -fsSL "https://raw.githubusercontent.com/kjanat/truenas-zshrc/master/lib/${f}.zsh" -o ~/.zsh/truenas/lib/${f}.zsh; \
+done && \
+echo 'source ~/.zsh/truenas/truenas.zsh' >> ~/.zshrc
+```
+
+## Raw URLs
+
+| File                  | URL                                                                                 |
+| --------------------- | ----------------------------------------------------------------------------------- |
+| `truenas.zsh`         | `https://raw.githubusercontent.com/kjanat/truenas-zshrc/master/truenas.zsh`         |
+| `lib/options.zsh`     | `https://raw.githubusercontent.com/kjanat/truenas-zshrc/master/lib/options.zsh`     |
+| `lib/aliases.zsh`     | `https://raw.githubusercontent.com/kjanat/truenas-zshrc/master/lib/aliases.zsh`     |
+| `lib/history.zsh`     | `https://raw.githubusercontent.com/kjanat/truenas-zshrc/master/lib/history.zsh`     |
+| `lib/keybindings.zsh` | `https://raw.githubusercontent.com/kjanat/truenas-zshrc/master/lib/keybindings.zsh` |
+| `lib/completion.zsh`  | `https://raw.githubusercontent.com/kjanat/truenas-zshrc/master/lib/completion.zsh`  |
+| `lib/prompt.zsh`      | `https://raw.githubusercontent.com/kjanat/truenas-zshrc/master/lib/prompt.zsh`      |
+| `lib/functions.zsh`   | `https://raw.githubusercontent.com/kjanat/truenas-zshrc/master/lib/functions.zsh`   |
+| `lib/plugins.zsh`     | `https://raw.githubusercontent.com/kjanat/truenas-zshrc/master/lib/plugins.zsh`     |
+
+## Structure
+
+```tree
+truenas.zsh          # Entry point (env, PATH, startup banner)
+lib/
+  options.zsh        # Shell options (auto_cd, globbing, jobs, etc.)
+  aliases.zsh        # Aliases (ls, nav, ZFS, network, archives)
+  history.zsh        # History config (100k lines, dedup, shared)
+  keybindings.zsh    # Emacs-style key bindings
+  completion.zsh     # Completion system, SSH hosts, syntax highlighting
+  prompt.zsh         # Multi-line prompt with ZFS/load/network indicators
+  functions.zsh      # Utility functions (security checks, system info)
+  plugins.zsh        # Plugin manager (install/load/update from git)
+```
+
+## Features
+
+- ZFS-aware prompt (pool health indicator, scrub status)
+- System load/network/battery status in prompt
+- SSH host completion from `~/.ssh/config` and `known_hosts`
+- FreeBSD + Linux compatible (LSCOLORS/LS_COLORS conversion)
+- Plugin manager with git-based install/update
+- 100+ aliases for ZFS, networking, navigation, and system admin
