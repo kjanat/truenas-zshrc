@@ -73,11 +73,19 @@ jobs:
           git push origin flat
 
       - name: Sync to gist
-        uses: popsiclestick/gist-sync-action@v1.2.0
         if: env.GIST_PAT != ''
+        uses: actions/github-script@v8
+        env:
+          GIST_ID: 83b9a10c9f6869607235933015c07121
         with:
-          auth: ${{ secrets.GIST_PAT }}
-          gist_url: https://gist.github.com/kjanat/83b9a10c9f6869607235933015c07121
-          gist_title: truenas.zsh
-          gist_description: "TrueNAS CORE ZSH config (flat build from ${{ env.SOURCE_SHA }})"
-          github_file: truenas.zsh
+          github-token: ${{ secrets.GIST_PAT }}
+          script: |
+            const { readFileSync } = await import('node:fs');
+            const content = readFileSync('truenas.zsh', 'utf8');
+            const sha = process.env.SOURCE_SHA;
+            await github.rest.gists.update({
+              gist_id: process.env.GIST_ID,
+              description: `TrueNAS CORE ZSH config (flat build from ${sha})`,
+              files: { 'truenas.zsh': { content } }
+            });
+            core.info(`Gist updated from ${sha}`);
