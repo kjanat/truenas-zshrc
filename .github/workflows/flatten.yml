@@ -74,3 +74,26 @@ jobs:
           fi
           git commit -m "Flatten ${SOURCE_SHA}: ${SOURCE_MSG}"
           git push origin flat
+
+      - name: Push to gist
+        if: ${{ secrets.GIST_PAT != '' }}
+        run: |
+          SOURCE_SHA="$(git rev-parse --short HEAD)"
+          SOURCE_MSG="$(git log -1 --format='%s')"
+          GIST_DIR="$(mktemp -d)"
+          git clone "https://x:${GIST_PAT}@gist.github.com/83b9a10c9f6869607235933015c07121.git" "$GIST_DIR"
+          cp truenas-flat.zsh "$GIST_DIR/truenas.zsh"
+          cd "$GIST_DIR"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add truenas.zsh
+          # Remove any leftover files from the old modular structure
+          git ls-files | grep -v '^truenas\.zsh$' | xargs -r git rm -f 2>/dev/null || true
+          if git diff --cached --quiet; then
+            echo "No changes to gist"
+            exit 0
+          fi
+          git commit -m "Flatten ${SOURCE_SHA}: ${SOURCE_MSG}"
+          git push
+        env:
+          GIST_PAT: ${{ secrets.GIST_PAT }}

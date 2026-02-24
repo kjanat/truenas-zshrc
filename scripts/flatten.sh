@@ -6,6 +6,15 @@ set -euo pipefail
 root="$(cd "$(dirname "$0")/.." && pwd)"
 entry="$root/truenas.zsh"
 
+# Redirect header
+cat <<'HEADER'
+# ============================================================================
+# This file is AUTO-GENERATED — do not edit.
+# Source: https://github.com/kjanat/truenas-zshrc
+# Install: fetch -qo ~/.zshrc.truenas <raw URL of this file>
+# ============================================================================
+HEADER
+
 while IFS= read -r line; do
 	# Match: source "${0:A:h}/lib/something.zsh"
 	if [[ "$line" =~ ^source\ \"\$\{0:A:h\}/lib/(.+\.zsh)\"$ ]]; then
