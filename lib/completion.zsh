@@ -19,7 +19,8 @@ zstyle ':completion:*' menu select=2
 # Colorize completions using default `ls` colors. 
 zstyle ':completion:*' list-colors '' 
 
-# Function to convert LSCOLORS (FreeBSD/macOS) to LS_COLORS (GNU/Linux) format 
+# Function to convert LSCOLORS (FreeBSD/macOS) to LS_COLORS (GNU/Linux) format
+# Interactive converter: https://kjanat.github.io/lscolors/ 
 convert_lscolors_to_ls_colors() { 
     local lscolors="$1" 
     local ls_colors="" 
