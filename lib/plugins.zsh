@@ -326,10 +326,10 @@ _autoload_plugins() {
         return 0 
     fi 
 
-    # Check if plugin directory contains any items before iterating 
-    if ! compgen -G "$ZSH_PLUGIN_DIR/*" > /dev/null 2>&1; then 
-        # No plugins found, silently exit 
-        return 0 
+    # Check if plugin directory contains any items before iterating
+    if [[ -z "$ZSH_PLUGIN_DIR"/*(N[1]) ]]; then
+        # No plugins found, silently exit
+        return 0
     fi 
 
     local loaded_count=0 

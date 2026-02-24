@@ -2,10 +2,6 @@
 # COMPLETION SYSTEM - ULTRA ADVANCED 
 # ============================================================================ 
 
-# Load completion system 
-autoload -Uz compinit 
-compinit 
-
 # Completion caching 
 zstyle ':completion::complete:*' use-cache on 
 zstyle ':completion::complete:*' cache-path ~/.zsh/cache 
@@ -53,10 +49,11 @@ convert_lscolors_to_ls_colors() {
             if [[ "${color%%:*}" == "$bg_char" ]]; then 
                 bg_code="${color##*:}" 
                 # Convert to background code (add 10 to single digit, handle bold) 
-                if [[ "$bg_code" =~ ^[0-9]$ ]]; then 
-                    bg_code="$((bg_code + 10))" 
-                elif [[ "$bg_code" == 1\;[0-9] ]]; then 
-                    bg_code="1;$((bg_code##*;} + 10))" 
+                if [[ "$bg_code" =~ ^[0-9]+$ ]]; then
+                    bg_code="$(( bg_code + 10 ))"
+                elif [[ "$bg_code" == 1\;* ]]; then
+                    local bg_num="${bg_code##*;}"
+                    bg_code="1;$(( bg_num + 10 ))"
                 fi 
                 break 
             fi 
@@ -82,7 +79,6 @@ if [[ -n "$LS_COLORS" ]]; then
     zstyle ':completion:*:default' list-colors "${(@s/:/)LS_COLORS}" 
 elif [[ -n "$LSCOLORS" ]]; then 
     # FreeBSD/TrueNAS uses LSCOLORS - convert to LS_COLORS format 
-    local converted_colors 
     converted_colors=$(convert_lscolors_to_ls_colors "$LSCOLORS") 
     if [[ -n "$converted_colors" ]]; then 
         zstyle ':completion:*' list-colors "${(@s/:/)converted_colors}" 
@@ -180,7 +176,7 @@ _setup_ssh_completion() {
             # Handle comma-separated hosts and ports 
             if [[ "$host_field" == *","* ]]; then 
                 # Split on comma and take first entry 
-                host_field="${host_field%%,*} "
+                host_field="${host_field%%,*}"
             fi 
 
             # Remove port numbers [host]:port format 
@@ -205,7 +201,7 @@ _setup_ssh_completion() {
             [[ -z "$line" || "$line" == "#"* ]] && continue 
             local host_field="${line%% *}" 
             if [[ "$host_field" == *","* ]]; then 
-                host_field="${host_field%%,*} "
+                host_field="${host_field%%,*}"
             fi 
             if [[ "$host_field" == "["* "]:"* ]]; then 
                 host_field="${host_field#[}" 
@@ -283,7 +279,7 @@ _setup_ssh_completion_portable() {
             while IFS= read -r line; do 
                 [[ -z "$line" || "$line" == "#"* ]] && continue 
                 local host_field="${line%% *}" 
-                host_field="${host_field%%,*} "
+                host_field="${host_field%%,*}"
                 if [[ "$host_field" == "["* "]:"* ]]; then 
                     host_field="${host_field#[}" 
                     host_field="${host_field%]:*}" 
@@ -394,25 +390,20 @@ if [[ -f /usr/local/share/zsh-autosuggestions/zsh-autosuggestions.zsh ]]; then
     ZSH_AUTOSUGGEST_BUFFER_MAX_SIZE=20 
 fi 
 
-# Load additional completions 
-if [[ -d /usr/local/share/zsh/site-functions ]]; then 
-    fpath=(/usr/local/share/zsh/site-functions $fpath) 
-fi 
-
 # Load bash completion compatibility 
 autoload -U +X bashcompinit && bashcompinit 
 
 # Custom completion functions 
-_zfs_completion() { 
-    local -a datasets 
-    mapfile -t datasets < <(zfs list -H -o name 2>/dev/null) 
-    compadd "${datasets[@]}" 
-} 
-compdef _zfs_completion zfs 
+_zfs_completion() {
+    local -a datasets
+    datasets=("${(@f)$(zfs list -H -o name 2>/dev/null)}")
+    compadd "${datasets[@]}"
+}
+compdef _zfs_completion zfs
 
-_zpool_completion() { 
-    local -a pools 
-    mapfile -t pools < <(zpool list -H -o name 2>/dev/null) 
-    compadd "${pools[@]}" 
-} 
+_zpool_completion() {
+    local -a pools
+    pools=("${(@f)$(zpool list -H -o name 2>/dev/null)}")
+    compadd "${pools[@]}"
+}
 compdef _zpool_completion zpool

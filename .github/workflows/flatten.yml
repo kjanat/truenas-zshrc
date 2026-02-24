@@ -4,10 +4,13 @@ on:
   push:
     branches: [master]
     paths:
-      - "truenas.zsh"
-      - "lib/**"
+      - "**/*.zsh"
       - "scripts/flatten.sh"
       - ".github/workflows/flatten.yml"
+
+concurrency:
+  group: flatten
+  cancel-in-progress: true
 
 permissions:
   contents: write
@@ -15,18 +18,24 @@ permissions:
 jobs:
   flatten:
     runs-on: ubuntu-latest
+    env:
+      GIST_PAT: ${{ secrets.GIST_PAT }}
     steps:
       - uses: actions/checkout@v6
+
+      - name: Capture source commit
+        run: |
+          echo "SOURCE_SHA=$(git rev-parse --short HEAD)" >> "$GITHUB_ENV"
+          echo "SOURCE_MSG=$(git log -1 --format='%s')" >> "$GITHUB_ENV"
 
       - name: Build flat file
         run: |
           chmod +x scripts/flatten.sh
-          scripts/flatten.sh > truenas-flat.zsh
+          scripts/flatten.sh > truenas.zsh.flat
 
       - name: Build flat README
         run: |
-          sha="$(git rev-parse --short HEAD)"
-          cat > flat-README.md <<EOF
+          cat > README.md.flat <<EOF
           # truenas-zshrc (flat)
 
           Single-file build of [truenas-zshrc](https://github.com/kjanat/truenas-zshrc) — auto-generated from \`master\` by CI.
@@ -34,13 +43,7 @@ jobs:
           ## Usage
 
           \`\`\`sh
-          source <(curl -fsSL https://raw.githubusercontent.com/kjanat/truenas-zshrc/flat/truenas.zsh)
-          \`\`\`
-
-          Or save locally:
-
-          \`\`\`sh
-          curl -fsSL https://raw.githubusercontent.com/kjanat/truenas-zshrc/flat/truenas.zsh -o ~/.zshrc.truenas
+          fetch -qo ~/.zshrc.truenas https://raw.githubusercontent.com/kjanat/truenas-zshrc/flat/truenas.zsh
           echo 'source ~/.zshrc.truenas' >> ~/.zshrc
           \`\`\`
 
@@ -49,25 +52,19 @@ jobs:
           This branch contains a single \`truenas.zsh\` with all \`lib/*.zsh\` modules inlined.
           Do not edit this branch directly — changes are overwritten on every push to [\`master\`](https://github.com/kjanat/truenas-zshrc/tree/master).
 
-          Built from [\`${sha}\`](https://github.com/kjanat/truenas-zshrc/commit/${sha}).
+          Built from [\`${SOURCE_SHA}\`](https://github.com/kjanat/truenas-zshrc/commit/${SOURCE_SHA}).
           EOF
-          # strip leading whitespace from heredoc
-          sed -i 's/^          //' flat-README.md
 
       - name: Deploy to flat branch
         run: |
-          SOURCE_SHA="$(git rev-parse --short HEAD)"
-          SOURCE_MSG="$(git log -1 --format='%s')"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git fetch origin flat:flat 2>/dev/null || git checkout --orphan flat
           git checkout flat
-          # Replace contents
           git rm -rf . 2>/dev/null || true
-          mv truenas-flat.zsh truenas.zsh
-          mv flat-README.md README.md
+          mv truenas.zsh.flat truenas.zsh
+          mv README.md.flat README.md
           git add truenas.zsh README.md
-          # Skip commit if nothing changed
           if git diff --cached --quiet; then
             echo "No changes to flat branch"
             exit 0
@@ -75,25 +72,12 @@ jobs:
           git commit -m "Flatten ${SOURCE_SHA}: ${SOURCE_MSG}"
           git push origin flat
 
-      - name: Push to gist
-        if: ${{ secrets.GIST_PAT != '' }}
-        run: |
-          SOURCE_SHA="$(git rev-parse --short HEAD)"
-          SOURCE_MSG="$(git log -1 --format='%s')"
-          GIST_DIR="$(mktemp -d)"
-          git clone "https://x:${GIST_PAT}@gist.github.com/83b9a10c9f6869607235933015c07121.git" "$GIST_DIR"
-          cp truenas-flat.zsh "$GIST_DIR/truenas.zsh"
-          cd "$GIST_DIR"
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add truenas.zsh
-          # Remove any leftover files from the old modular structure
-          git ls-files | grep -v '^truenas\.zsh$' | xargs -r git rm -f 2>/dev/null || true
-          if git diff --cached --quiet; then
-            echo "No changes to gist"
-            exit 0
-          fi
-          git commit -m "Flatten ${SOURCE_SHA}: ${SOURCE_MSG}"
-          git push
-        env:
-          GIST_PAT: ${{ secrets.GIST_PAT }}
+      - name: Sync to gist
+        uses: popsiclestick/gist-sync-action@v1.2.0
+        if: env.GIST_PAT != ''
+        with:
+          auth: ${{ secrets.GIST_PAT }}
+          gist_url: https://gist.github.com/kjanat/83b9a10c9f6869607235933015c07121
+          gist_title: truenas.zsh
+          gist_description: "TrueNAS CORE ZSH config (flat build from ${{ env.SOURCE_SHA }})"
+          github_file: truenas.zsh

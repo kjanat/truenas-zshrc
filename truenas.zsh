@@ -10,6 +10,11 @@
 # Skip global compinit for faster startup
 skip_global_compinit=1
 
+# Additional completion paths
+if [[ -d /usr/local/share/zsh/site-functions ]]; then
+	fpath=(/usr/local/share/zsh/site-functions $fpath)
+fi
+
 # Optimize completion loading
 autoload -Uz compinit
 # Simple completion check - rebuild daily or if missing
@@ -36,15 +41,9 @@ export IGNORE_OSVERSION=yes # Ignore OS version checks
 # Enhanced PATH
 export PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/sbin:/usr/local/bin:$HOME/bin:$HOME/.local/bin:/usr/games
 
-# Less configuration for better viewing
-export LESSOPEN="| /usr/bin/lesspipe %s"   # Use lesspipe for automatic file type detection
-export LESSCLOSE="/usr/bin/lesspipe %s %s" # Close lesspipe after viewing
-export LESS='-F -g -i -M -R -S -w -X -z-4' # Less options for better usability
-export LESSHISTFILE=-                      # Disable less history file
-
-# Grep colors
-export GREP_COLOR='1;32'           # Set default grep color to bright green
-export GREP_OPTIONS='--color=auto' # Enable color output for grep
+# Less configuration
+export LESS='-F -g -i -M -R -S -w -X -z-4'
+export LESSHISTFILE=-
 
 # ============================================================================
 # SOURCE CONFIGURATION FILES
@@ -70,14 +69,9 @@ if [[ $- == *i* && -z $ZSH_BANNER_SHOWN ]]; then
 	############################################################################
 	# Quick system status
 	############################################################################
-	# Hostname, RAM, load‐average uptime, and current time in one neat line
-	if uptime -p > /dev/null 2>&1; then
-		up="$(uptime -p | sed 's/^up //')" # GNU coreutils
-	else
-		up="$(uptime | awk -F'up |, *[0-9]+ user' '{print $2}')" # BSD
-	fi
-
-	printf "📍 %s | 💾 %.1f GB RAM | ⏰ %s | 🔄 %s\n" \
+	# Hostname, RAM, uptime, and current time
+	up="$(uptime | awk -F'up |, *[0-9]+ user' '{print $2}')"
+	printf "📍 %s | 💾 %.1f GB RAM | 🔄 %s | ⏰ %s\n" \
 		"$(hostname)" \
 		"$(sysctl -n hw.physmem | awk '{printf "%.1f", $1/1024/1024/1024}')" \
 		"$up" \
@@ -128,56 +122,41 @@ echo "🎉 Ultimate TrueNAS ZSH loaded! Type 'help' for command overview."
 # Help function
 help() {
 	echo "
-🎯 ULTIMATE TRUENAS ZSH COMMAND REFERENCE:
+TRUENAS ZSH COMMAND REFERENCE:
 
-📊 SYSTEM MONITORING:
-  sysinfo         - Complete system dashboard
-  perfmon         - Performance monitor
-  temps           - Temperature sensors
-
-🏊 ZFS MANAGEMENT:
-  zhealth         - Complete ZFS health check
-  zfsmaint        - ZFS maintenance helper
+ZFS:
   pools           - List ZFS pools with health
   datasets        - List ZFS datasets
   snapshots       - List ZFS snapshots
-  scrub           - Start pool scrub
+  scrub <pool>    - Start pool scrub
+  free            - FreeBSD memory info
 
-🌐 NETWORK TOOLS:
-  nettest         - Network connectivity test
-  netinfo         - Complete network info
-  myip            - Show external IP
-  ports           - Show listening ports
-  speedtest       - Internet speed test
+NETWORK:
+  myip / myipv4 / myipv6  - Show external IP
+  localip         - Show local IPs
+  netports        - Show listening ports
 
-🔧 SYSTEM ADMINISTRATION:
-  servstat        - Service status overview
-  jailmgr         - Jail/container manager
-  seccheck        - Security check
-  cleanup         - System cleanup
-  sysupdate       - Update helper
-
-📁 FILE OPERATIONS:
+FILE OPERATIONS:
   ff [name]       - Find files by name
   ftext [text]    - Find files by content
   extract [file]  - Extract any archive
-  backup [file]   - Quick backup
-  findfile [name] - Find with preview
+  backup [file]   - Quick backup with timestamp
 
-🎯 UTILITIES:
+UTILITIES:
   calc [expr]     - Calculator
-  genpass [len]   - Password generator
-  serve [port]    - HTTP file server
+  genpass [len]   - Password generator (default 20)
+  serve [port]    - HTTP file server (default 8000)
 
-📍 QUICK NAVIGATION:
+QUICK NAVIGATION:
   ~freenas        - /mnt/PoolONE/FreeNAS
   ~pools          - /mnt
   ~logs           - /var/log
   ~etc            - /etc
 
-✨ Press TAB for auto-completion on everything!
-🎨 Commands are color-coded as you type!
-🔍 Use Ctrl+R for history search!"
+PLUGIN MANAGEMENT:
+  list_plugins              - Show installed plugins
+  load_plugin <name>        - Load a plugin
+  install_plugin <git_url>  - Install from git
 
-	# End of configuration
+Press TAB for auto-completion. Ctrl+R for history search."
 }
