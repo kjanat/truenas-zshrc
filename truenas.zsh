@@ -19,7 +19,7 @@ fi
 autoload -Uz compinit
 # Simple completion check - rebuild daily or if missing
 zcompdump="${ZDOTDIR:-$HOME}/.zcompdump"
-if [[ ! -f $zcompdump ]] || [[ $(find "$zcompdump" -mtime +1 2> /dev/null | wc -l) -gt 0 ]]; then
+if [[ ! -f $zcompdump ]] || [[ $(find "$zcompdump" -mtime +1 2>/dev/null | wc -l) -gt 0 ]]; then
 	compinit
 else
 	compinit -C
@@ -86,7 +86,7 @@ if [[ $- == *i* && -z $ZSH_BANNER_SHOWN ]]; then
 	# Check for freenas-update (non-blocking)
 	############################################################################
 	{
-		if command -v freenas-update > /dev/null 2>&1; then
+		if command -v freenas-update >/dev/null 2>&1; then
 			update_output=$(freenas-update check 2>/dev/null)
 			if [[ $? -eq 0 && -n "$update_output" ]]; then
 				echo "📦 System update available: run 'freenas-update'"

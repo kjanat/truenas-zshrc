@@ -41,7 +41,7 @@ _prompt_get_zfs() {
 
 # Battery status (ACPI on FreeBSD)
 _prompt_get_battery() {
-	if command -v acpiconf > /dev/null 2>&1; then
+	if command -v acpiconf >/dev/null 2>&1; then
 		local battery
 		battery=$(acpiconf -i 0 2>/dev/null | awk '/Remaining capacity:/ {gsub(/%/, "", $3); print $3}')
 		if [[ -n $battery ]]; then

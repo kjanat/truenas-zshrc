@@ -20,17 +20,17 @@ freebsd_meminfo() {
 	cached=$(sysctl -n vm.stats.vm.v_cache_count 2>/dev/null || echo 0)
 	free_pages=$(sysctl -n vm.stats.vm.v_free_count)
 
-	printf "%-12s %s\n" "Total:" "$(( physmem / 1024 / 1024 )) MB"
-	printf "%-12s %s\n" "Active:" "$(( active * pagesize / 1024 / 1024 )) MB"
-	printf "%-12s %s\n" "Inactive:" "$(( inactive * pagesize / 1024 / 1024 )) MB"
-	printf "%-12s %s\n" "Wired:" "$(( wired * pagesize / 1024 / 1024 )) MB"
-	printf "%-12s %s\n" "Cached:" "$(( cached * pagesize / 1024 / 1024 )) MB"
-	printf "%-12s %s\n" "Free:" "$(( free_pages * pagesize / 1024 / 1024 )) MB"
+	printf "%-12s %s\n" "Total:" "$((physmem / 1024 / 1024)) MB"
+	printf "%-12s %s\n" "Active:" "$((active * pagesize / 1024 / 1024)) MB"
+	printf "%-12s %s\n" "Inactive:" "$((inactive * pagesize / 1024 / 1024)) MB"
+	printf "%-12s %s\n" "Wired:" "$((wired * pagesize / 1024 / 1024)) MB"
+	printf "%-12s %s\n" "Cached:" "$((cached * pagesize / 1024 / 1024)) MB"
+	printf "%-12s %s\n" "Free:" "$((free_pages * pagesize / 1024 / 1024)) MB"
 }
 
 # ZFS pool status (called from startup banner)
 get_zfs_status() {
-	if ! command -v zpool > /dev/null 2>&1; then
+	if ! command -v zpool >/dev/null 2>&1; then
 		return 0
 	fi
 	local pool_count
@@ -61,19 +61,22 @@ extract() {
 		return 1
 	fi
 	case "$1" in
-		*.tar.bz2) tar xjf "$1" ;;
-		*.tar.gz)  tar xzf "$1" ;;
-		*.tar.xz)  tar xJf "$1" ;;
-		*.bz2)     bunzip2 "$1" ;;
-		*.gz)      gunzip "$1" ;;
-		*.tar)     tar xf "$1" ;;
-		*.tbz2)    tar xjf "$1" ;;
-		*.tgz)     tar xzf "$1" ;;
-		*.zip)     unzip "$1" ;;
-		*.Z)       uncompress "$1" ;;
-		*.7z)      7z x "$1" ;;
-		*.xz)      xz -d "$1" ;;
-		*) echo "Cannot extract '$1'" ; return 1 ;;
+	*.tar.bz2) tar xjf "$1" ;;
+	*.tar.gz) tar xzf "$1" ;;
+	*.tar.xz) tar xJf "$1" ;;
+	*.bz2) bunzip2 "$1" ;;
+	*.gz) gunzip "$1" ;;
+	*.tar) tar xf "$1" ;;
+	*.tbz2) tar xjf "$1" ;;
+	*.tgz) tar xzf "$1" ;;
+	*.zip) unzip "$1" ;;
+	*.Z) uncompress "$1" ;;
+	*.7z) 7z x "$1" ;;
+	*.xz) xz -d "$1" ;;
+	*)
+		echo "Cannot extract '$1'"
+		return 1
+		;;
 	esac
 }
 
@@ -98,7 +101,7 @@ calc() { python3 -c "print($*)" 2>/dev/null || awk "BEGIN{print $*}"; }
 # Password generator
 genpass() {
 	local len="${1:-20}"
-	LC_ALL=C tr -dc 'A-Za-z0-9!@#$%^&*' < /dev/urandom | head -c "$len"
+	LC_ALL=C tr -dc 'A-Za-z0-9!@#$%^&*' </dev/urandom | head -c "$len"
 	echo
 }
 

@@ -3,12 +3,12 @@
 # ============================================================================
 
 # Directory navigation
-setopt AUTO_CD              # cd by typing directory name
-setopt AUTO_PUSHD           # Push old directory onto stack
-setopt PUSHD_IGNORE_DUPS    # Don't push duplicates
-setopt PUSHD_MINUS  # Exchange + and - for pushd
-setopt CD_ABLE_VARS # Try expanding as variable
-setopt PUSHD_SILENT # Don't print stack after pushd/popd
+setopt AUTO_CD           # cd by typing directory name
+setopt AUTO_PUSHD        # Push old directory onto stack
+setopt PUSHD_IGNORE_DUPS # Don't push duplicates
+setopt PUSHD_MINUS       # Exchange + and - for pushd
+setopt CD_ABLE_VARS      # Try expanding as variable
+setopt PUSHD_SILENT      # Don't print stack after pushd/popd
 
 # Globbing and expansion
 setopt EXTENDED_GLOB     # Extended globbing

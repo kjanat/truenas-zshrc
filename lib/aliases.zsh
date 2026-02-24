@@ -13,9 +13,9 @@ alias freenas_dir='cd /mnt/PoolONE/FreeNAS'
 
 # Enhanced ls aliases with colors (FreeBSD compatible)
 alias l='ls -CF'
-alias lr='ls -R'         # recursive
-alias lt='ls -ltrh'      # sort by date
-alias lk='ls -lSrh'      # sort by size
+alias lr='ls -R'    # recursive
+alias lt='ls -ltrh' # sort by date
+alias lk='ls -lSrh' # sort by size
 # alias lx='ls -lXBh'    # GNU only, not available on FreeBSD
 alias lc='ls -ltcrh'     # sort by change time
 alias lu='ls -lturh'     # sort by access time
