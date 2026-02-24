@@ -1,3 +1,8 @@
+# ============================================================================
+# This file is AUTO-GENERATED — do not edit.
+# Source: https://github.com/kjanat/truenas-zshrc
+# Install: fetch -qo ~/.zshrc.truenas <raw URL of this file>
+# ============================================================================
 #!/usr/bin/env zsh
 # ============================================================================
 # ULTIMATE TrueNAS ZSH Configuration
@@ -9,6 +14,11 @@
 
 # Skip global compinit for faster startup
 skip_global_compinit=1
+
+# Additional completion paths
+if [[ -d /usr/local/share/zsh/site-functions ]]; then
+	fpath=(/usr/local/share/zsh/site-functions $fpath)
+fi
 
 # Optimize completion loading
 autoload -Uz compinit
@@ -36,15 +46,9 @@ export IGNORE_OSVERSION=yes # Ignore OS version checks
 # Enhanced PATH
 export PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/sbin:/usr/local/bin:$HOME/bin:$HOME/.local/bin:/usr/games
 
-# Less configuration for better viewing
-export LESSOPEN="| /usr/bin/lesspipe %s"   # Use lesspipe for automatic file type detection
-export LESSCLOSE="/usr/bin/lesspipe %s %s" # Close lesspipe after viewing
-export LESS='-F -g -i -M -R -S -w -X -z-4' # Less options for better usability
-export LESSHISTFILE=-                      # Disable less history file
-
-# Grep colors
-export GREP_COLOR='1;32'           # Set default grep color to bright green
-export GREP_OPTIONS='--color=auto' # Enable color output for grep
+# Less configuration
+export LESS='-F -g -i -M -R -S -w -X -z-4'
+export LESSHISTFILE=-
 
 # ============================================================================
 # SOURCE CONFIGURATION FILES
@@ -131,7 +135,7 @@ alias l='ls -CF'
 alias lr='ls -R'         # recursive
 alias lt='ls -ltrh'      # sort by date
 alias lk='ls -lSrh'      # sort by size
-alias lx='ls -lXBh'      # sort by extension (if supported)
+# alias lx='ls -lXBh'    # GNU only, not available on FreeBSD
 alias lc='ls -ltcrh'     # sort by change time
 alias lu='ls -lturh'     # sort by access time
 alias lm='ls -al | more' # pipe through more
@@ -165,24 +169,25 @@ psg() { ps -aux | grep -v "grep" | grep -i -- "$@"; }
 # alias psg='ps -aux | grep -v grep | grep --color=auto -i'
 
 # alias top='htop 2>/dev/null || top'
-alias iotop='iotop 2>/dev/null || iostat'
+alias iotop='iotop 2>/dev/null || command iostat'
 alias nethogs='nethogs 2>/dev/null || echo "nethogs not installed"'
 
 # Network aliases
-alias myip='printf "$(curl -s ifconfig.me)\n"'
+alias myip='curl -s ifconfig.me; echo'
 alias myipv4="curl -s ipv4.icanhazip.com"
 alias myipv6="curl -s ipv6.icanhazip.com"
 alias localip="ifconfig | grep -Eo 'inet (addr:)?([0-9]*\.){3}[0-9]*' | grep -Eo '([0-9]*\.){3}[0-9]*' | grep -v '127.0.0.1'"
-alias speedtest='curl -s https://raw.githubusercontent.com/sivel/speedtest-cli/master/speedtest.py | python'
+# alias speedtest='curl -s .../speedtest.py | python'  # disabled: supply-chain risk, python may not exist
 alias netports="sockstat -46lsc | sed -n '1p'; sockstat -46Llsc | sed '1d' | sort -uk6 -k2 -k5 -k7 | column -t"
-# shellcheck disable=SC2142
-alias listening='(echo "SERVICE      PROTOCOL  PORT   ADDRESS"; 
-sockstat -46lLs | awk """ 
-   /LISTEN/ && NR > 1 { 
-       port = $6; gsub(/:.*/, "", port) 
-       printf "% -12s % -9s % -6s %s\n", $2, $5, port, $6 
-   } 
-"" | sort -k3 -n | uniq)'
+listening() {
+	echo "SERVICE      PROTOCOL  PORT   ADDRESS"
+	sockstat -46lLs | awk '
+		/LISTEN/ && NR > 1 {
+			port = $6; gsub(/:.*/, "", port)
+			printf "%-12s %-9s %-6s %s\n", $2, $5, port, $6
+		}
+	' | sort -k3 -n | uniq
+}
 alias tcpdump='sudo tcpdump -nn -tttt'
 
 # TrueNAS power aliases
@@ -191,14 +196,14 @@ alias datasets='zfs list -o name,used,avail,refer,mountpoint'
 alias snapshots='zfs list -t snapshot -o name,used,refer,creation'
 alias scrub='zpool scrub'
 alias scrubstatus='zpool status | grep scrub' # -x or not?
-alias iostat='zpool iostat 1'
+alias ziostat='zpool iostat 1 5'
 alias services='service -e'
 alias servicestatus='service -l'
 alias jails='jls -v'
 alias plugins='iocage list'
 alias logs='tail -f /var/log/messages'
 alias syslog='less /var/log/messages'
-alias dmesg='dmesg --color=always | less -R'
+alias dmesg='dmesg | less -R'
 alias mountinfo='mount | column -t'
 
 # Quick editing
@@ -228,17 +233,10 @@ alias q='exit'
 alias x='exit'
 alias :q='exit'
 alias bashrc='$EDITOR ~/.bashrc'
-alias path='echo -e ${PATH//:/\n}'
+alias path='print -l ${(s/:/)PATH}'
 alias now='date +"%T"'
 alias nowtime=now
 alias nowdate='date +"%d-%m-%Y"'
-
-# Safety aliases for destructive commands (FreeBSD compatible)
-alias rm='rm -i'
-alias del='rm -i'
-alias mv='mv -i'
-alias cp='cp -i'
-alias ln='ln -i'
 
 # ======================================== history.zsh ========================================
 # ============================================================================
@@ -315,10 +313,6 @@ bindkey '^[[6~' down-line-or-history
 # COMPLETION SYSTEM - ULTRA ADVANCED 
 # ============================================================================ 
 
-# Load completion system 
-autoload -Uz compinit 
-compinit 
-
 # Completion caching 
 zstyle ':completion::complete:*' use-cache on 
 zstyle ':completion::complete:*' cache-path ~/.zsh/cache 
@@ -366,10 +360,11 @@ convert_lscolors_to_ls_colors() {
             if [[ "${color%%:*}" == "$bg_char" ]]; then 
                 bg_code="${color##*:}" 
                 # Convert to background code (add 10 to single digit, handle bold) 
-                if [[ "$bg_code" =~ ^[0-9]$ ]]; then 
-                    bg_code="$((bg_code + 10))" 
-                elif [[ "$bg_code" == 1\;[0-9] ]]; then 
-                    bg_code="1;$((bg_code##*;} + 10))" 
+                if [[ "$bg_code" =~ ^[0-9]+$ ]]; then
+                    bg_code="$(( bg_code + 10 ))"
+                elif [[ "$bg_code" == 1\;* ]]; then
+                    local bg_num="${bg_code##*;}"
+                    bg_code="1;$(( bg_num + 10 ))"
                 fi 
                 break 
             fi 
@@ -395,7 +390,6 @@ if [[ -n "$LS_COLORS" ]]; then
     zstyle ':completion:*:default' list-colors "${(@s/:/)LS_COLORS}" 
 elif [[ -n "$LSCOLORS" ]]; then 
     # FreeBSD/TrueNAS uses LSCOLORS - convert to LS_COLORS format 
-    local converted_colors 
     converted_colors=$(convert_lscolors_to_ls_colors "$LSCOLORS") 
     if [[ -n "$converted_colors" ]]; then 
         zstyle ':completion:*' list-colors "${(@s/:/)converted_colors}" 
@@ -493,7 +487,7 @@ _setup_ssh_completion() {
             # Handle comma-separated hosts and ports 
             if [[ "$host_field" == *","* ]]; then 
                 # Split on comma and take first entry 
-                host_field="${host_field%%,*} "
+                host_field="${host_field%%,*}"
             fi 
 
             # Remove port numbers [host]:port format 
@@ -518,7 +512,7 @@ _setup_ssh_completion() {
             [[ -z "$line" || "$line" == "#"* ]] && continue 
             local host_field="${line%% *}" 
             if [[ "$host_field" == *","* ]]; then 
-                host_field="${host_field%%,*} "
+                host_field="${host_field%%,*}"
             fi 
             if [[ "$host_field" == "["* "]:"* ]]; then 
                 host_field="${host_field#[}" 
@@ -596,7 +590,7 @@ _setup_ssh_completion_portable() {
             while IFS= read -r line; do 
                 [[ -z "$line" || "$line" == "#"* ]] && continue 
                 local host_field="${line%% *}" 
-                host_field="${host_field%%,*} "
+                host_field="${host_field%%,*}"
                 if [[ "$host_field" == "["* "]:"* ]]; then 
                     host_field="${host_field#[}" 
                     host_field="${host_field%]:*}" 
@@ -707,36 +701,32 @@ if [[ -f /usr/local/share/zsh-autosuggestions/zsh-autosuggestions.zsh ]]; then
     ZSH_AUTOSUGGEST_BUFFER_MAX_SIZE=20 
 fi 
 
-# Load additional completions 
-if [[ -d /usr/local/share/zsh/site-functions ]]; then 
-    fpath=(/usr/local/share/zsh/site-functions $fpath) 
-fi 
-
 # Load bash completion compatibility 
 autoload -U +X bashcompinit && bashcompinit 
 
 # Custom completion functions 
-_zfs_completion() { 
-    local -a datasets 
-    mapfile -t datasets < <(zfs list -H -o name 2>/dev/null) 
-    compadd "${datasets[@]}" 
-} 
-compdef _zfs_completion zfs 
+_zfs_completion() {
+    local -a datasets
+    datasets=("${(@f)$(zfs list -H -o name 2>/dev/null)}")
+    compadd "${datasets[@]}"
+}
+compdef _zfs_completion zfs
 
-_zpool_completion() { 
-    local -a pools 
-    mapfile -t pools < <(zpool list -H -o name 2>/dev/null) 
-    compadd "${pools[@]}" 
-} 
+_zpool_completion() {
+    local -a pools
+    pools=("${(@f)$(zpool list -H -o name 2>/dev/null)}")
+    compadd "${pools[@]}"
+}
 compdef _zpool_completion zpool
 
 # ======================================== prompt.zsh ========================================
 # ============================================================================
-# ULTRA ADVANCED PROMPT WITH STATUS INDICATORS
+# PROMPT WITH STATUS INDICATORS
 # ============================================================================
 
 autoload -U colors && colors
 autoload -Uz vcs_info
+autoload -Uz add-zsh-hook
 
 # Git status with detailed info
 zstyle ':vcs_info:git:*' formats ' %F{yellow}⎇ %b%f%c%u'
@@ -747,23 +737,23 @@ zstyle ':vcs_info:*' check-for-changes true
 zstyle ':vcs_info:*' enable git
 
 # System load indicator
-get_load() {
+_prompt_get_load() {
 	local load load_int
 	load=$(uptime | awk -F 'load averages: ' '{print $2}' | awk '{print $1}' | sed 's/,//')
 	load_int=${load%.*}
 	if [[ $load_int -gt 2 ]]; then
-		printf "\033[31m⚠ %s\033[0m\n" "$load" # Red
+		printf "\033[31m⚠ %s\033[0m\n" "$load"
 	elif [[ $load_int -gt 1 ]]; then
-		printf "\033[33m⚡ %s\033[0m\n" "$load" # Yellow
+		printf "\033[33m⚡ %s\033[0m\n" "$load"
 	else
-		printf "\033[32m✓ %s\033[0m\n" "$load" # Green
+		printf "\033[32m✓ %s\033[0m\n" "$load"
 	fi
 }
 
 # ZFS pool health indicator
-get_zfs_quick_status() {
+_prompt_get_zfs() {
 	local zfs_status_count
-	zfs_status_count=$(zpool status -x 2> /dev/null | grep -v "errors: No known data errors\|all pools are healthy" | grep -icE "(errors|degraded|offline|repaired|unrecoverable)")
+	zfs_status_count=$(zpool status -x 2>/dev/null | grep -v "errors: No known data errors\|all pools are healthy" | grep -icE "(errors|degraded|offline|repaired|unrecoverable)")
 	if [[ $zfs_status_count -gt 0 ]]; then
 		echo "%F{red}⚠  ZFS%f"
 	else
@@ -772,10 +762,10 @@ get_zfs_quick_status() {
 }
 
 # Battery status (ACPI on FreeBSD)
-get_battery() {
+_prompt_get_battery() {
 	if command -v acpiconf > /dev/null 2>&1; then
 		local battery
-		battery=$(acpiconf -i 0 2> /dev/null | awk '/Remaining capacity:/ {gsub(/%/, "", $3); print $3}')
+		battery=$(acpiconf -i 0 2>/dev/null | awk '/Remaining capacity:/ {gsub(/%/, "", $3); print $3}')
 		if [[ -n $battery ]]; then
 			if [[ $battery -lt 20 ]]; then
 				echo "%F{red}🔋 ${battery}%%%f"
@@ -788,47 +778,135 @@ get_battery() {
 	fi
 }
 
-# Network connectivity indicator
-get_network() {
-	if ping -c 1 8.8.8.8 &> /dev/null; then
-		echo '%F{green}🌐%f'
-	else
-		echo '%F{red}⚠ NET%f'
-	fi
-}
-
-# Async functions for prompt
-autoload -Uz add-zsh-hook
-
-precmd() {
+# Precmd hook (uses add-zsh-hook to avoid clobbering other hooks)
+_truenas_precmd() {
 	vcs_info
-	# Cache system info for performance
-	typeset -g _load_info="$(get_load)"
-	typeset -g _zfs_info="$(get_zfs_quick_status)"
-	typeset -g _net_info="$(get_network)"
-	typeset -g _battery_info="$(get_battery)"
+	typeset -g _load_info="$(_prompt_get_load)"
+	typeset -g _zfs_info="$(_prompt_get_zfs)"
+	typeset -g _battery_info="$(_prompt_get_battery)"
 }
+add-zsh-hook precmd _truenas_precmd
 
-# Ultimate multi-line prompt
-PROMPT='%F{cyan}╭─[%f%F{green}%n@%m%f%F{cyan}]─[%f%F{blue}%~%f%F{cyan}]${vcs_info_msg_0_}─[%f${_load_info}%F{cyan}]─[%f${_zfs_info}%F{cyan}]─[%f${_net_info}%F{cyan}]${_battery_info:+─[}${_battery_info}${_battery_info:+%F{cyan}%f 
+# Multi-line prompt
+PROMPT='%F{cyan}╭─[%f%F{green}%n@%m%f%F{cyan}]─[%f%F{blue}%~%f%F{cyan}]${vcs_info_msg_0_}─[%f${_load_info}%F{cyan}]─[%f${_zfs_info}%F{cyan}]${_battery_info:+─[}${_battery_info}${_battery_info:+]}
 %F{cyan}╰─%f%(?.%F{green}➤%f.%F{red}➤%f) '
 
 # Right prompt with time, exit code, and job count
 RPROMPT='%(1j.%F{magenta}⚙ %j%f .)%(?..%F{red}✗ %?%f )%F{cyan}⌚ %D{%H:%M:%S}%f'
 
 # ======================================== functions.zsh ========================================
-echo "🔒 Security Check:"
+# ============================================================================
+# FUNCTIONS
+# ============================================================================
 
-echo "=== Failed Login Attempts ==="
-grep "Failed password" /var/log/auth.log 2>/dev/null | tail -5 || echo "No auth.log found"
+# Named directory hashes
+hash -d freenas=/mnt/PoolONE/FreeNAS
+hash -d pools=/mnt
+hash -d logs=/var/log
+hash -d etc=/etc
 
-echo "=== Open Ports ==="
-netstat -4lCna --libxo json \
-  | jq -r '["PROTOCOL", "ADDRESS", "PORT", "STATE"], (.statistics.socket[] | select(.["tcp-state"] != null and (if .["tcp-state"] | type == "string" then .["tcp-state"] | contains("LISTEN") else false end)) | [.protocol, .local.address, .local.port, .["tcp-state"]]) | @tsv' \
-  | sort -nk3 -k2 -k1 \
-  | column -t
+# FreeBSD memory info (aliased as 'free')
+freebsd_meminfo() {
+	local physmem
+	physmem=$(sysctl -n hw.physmem 2>/dev/null) || return 1
+	local pagesize active inactive wired cached free_pages
+	pagesize=$(sysctl -n hw.pagesize)
+	active=$(sysctl -n vm.stats.vm.v_active_count)
+	inactive=$(sysctl -n vm.stats.vm.v_inactive_count)
+	wired=$(sysctl -n vm.stats.vm.v_wire_count)
+	cached=$(sysctl -n vm.stats.vm.v_cache_count 2>/dev/null || echo 0)
+	free_pages=$(sysctl -n vm.stats.vm.v_free_count)
 
-echo "=== Root Login Sessions ==="
+	printf "%-12s %s\n" "Total:" "$(( physmem / 1024 / 1024 )) MB"
+	printf "%-12s %s\n" "Active:" "$(( active * pagesize / 1024 / 1024 )) MB"
+	printf "%-12s %s\n" "Inactive:" "$(( inactive * pagesize / 1024 / 1024 )) MB"
+	printf "%-12s %s\n" "Wired:" "$(( wired * pagesize / 1024 / 1024 )) MB"
+	printf "%-12s %s\n" "Cached:" "$(( cached * pagesize / 1024 / 1024 )) MB"
+	printf "%-12s %s\n" "Free:" "$(( free_pages * pagesize / 1024 / 1024 )) MB"
+}
+
+# ZFS pool status (called from startup banner)
+get_zfs_status() {
+	if ! command -v zpool > /dev/null 2>&1; then
+		return 0
+	fi
+	local pool_count
+	pool_count=$(zpool list -H -o name 2>/dev/null | wc -l | tr -d ' ')
+	if [[ $pool_count -eq 0 ]]; then
+		return 0
+	fi
+	local unhealthy
+	unhealthy=$(zpool list -H -o name,health 2>/dev/null | grep -v ONLINE)
+	if [[ -n "$unhealthy" ]]; then
+		echo "⚠️  ZFS pools need attention:"
+		echo "$unhealthy" | while IFS=$'\t' read -r name health; do
+			printf "   %s: %s\n" "$name" "$health"
+		done
+	else
+		printf "✅ %d ZFS pool(s) healthy\n" "$pool_count"
+	fi
+}
+
+# Extract any archive
+extract() {
+	if [[ -z "$1" ]]; then
+		echo "Usage: extract <file>"
+		return 1
+	fi
+	if [[ ! -f "$1" ]]; then
+		echo "'$1' is not a file"
+		return 1
+	fi
+	case "$1" in
+		*.tar.bz2) tar xjf "$1" ;;
+		*.tar.gz)  tar xzf "$1" ;;
+		*.tar.xz)  tar xJf "$1" ;;
+		*.bz2)     bunzip2 "$1" ;;
+		*.gz)      gunzip "$1" ;;
+		*.tar)     tar xf "$1" ;;
+		*.tbz2)    tar xjf "$1" ;;
+		*.tgz)     tar xzf "$1" ;;
+		*.zip)     unzip "$1" ;;
+		*.Z)       uncompress "$1" ;;
+		*.7z)      7z x "$1" ;;
+		*.xz)      xz -d "$1" ;;
+		*) echo "Cannot extract '$1'" ; return 1 ;;
+	esac
+}
+
+# Quick backup
+backup() {
+	if [[ -z "$1" ]]; then
+		echo "Usage: backup <file>"
+		return 1
+	fi
+	cp -a "$1" "${1}.bak.$(date +%Y%m%d%H%M%S)"
+}
+
+# Find files by name
+ff() { find . -type f -iname "*${1}*" 2>/dev/null; }
+
+# Find files by content
+ftext() { grep -rn --color=auto "$1" . 2>/dev/null; }
+
+# Simple calculator
+calc() { python3 -c "print($*)" 2>/dev/null || awk "BEGIN{print $*}"; }
+
+# Password generator
+genpass() {
+	local len="${1:-20}"
+	LC_ALL=C tr -dc 'A-Za-z0-9!@#$%^&*' < /dev/urandom | head -c "$len"
+	echo
+}
+
+# Simple HTTP file server
+serve() {
+	local port="${1:-8000}"
+	python3 -m http.server "$port" 2>/dev/null || {
+		echo "python3 not found; install with: pkg install python3"
+		return 1
+	}
+}
 
 # ======================================== plugins.zsh ========================================
 # ============================================================================ 
@@ -1159,10 +1237,10 @@ _autoload_plugins() {
         return 0 
     fi 
 
-    # Check if plugin directory contains any items before iterating 
-    if ! compgen -G "$ZSH_PLUGIN_DIR/*" > /dev/null 2>&1; then 
-        # No plugins found, silently exit 
-        return 0 
+    # Check if plugin directory contains any items before iterating
+    if [[ -z "$ZSH_PLUGIN_DIR"/*(N[1]) ]]; then
+        # No plugins found, silently exit
+        return 0
     fi 
 
     local loaded_count=0 
@@ -1253,14 +1331,9 @@ if [[ $- == *i* && -z $ZSH_BANNER_SHOWN ]]; then
 	############################################################################
 	# Quick system status
 	############################################################################
-	# Hostname, RAM, load‐average uptime, and current time in one neat line
-	if uptime -p > /dev/null 2>&1; then
-		up="$(uptime -p | sed 's/^up //')" # GNU coreutils
-	else
-		up="$(uptime | awk -F'up |, *[0-9]+ user' '{print $2}')" # BSD
-	fi
-
-	printf "📍 %s | 💾 %.1f GB RAM | ⏰ %s | 🔄 %s\n" \
+	# Hostname, RAM, uptime, and current time
+	up="$(uptime | awk -F'up |, *[0-9]+ user' '{print $2}')"
+	printf "📍 %s | 💾 %.1f GB RAM | 🔄 %s | ⏰ %s\n" \
 		"$(hostname)" \
 		"$(sysctl -n hw.physmem | awk '{printf "%.1f", $1/1024/1024/1024}')" \
 		"$up" \
@@ -1311,56 +1384,41 @@ echo "🎉 Ultimate TrueNAS ZSH loaded! Type 'help' for command overview."
 # Help function
 help() {
 	echo "
-🎯 ULTIMATE TRUENAS ZSH COMMAND REFERENCE:
+TRUENAS ZSH COMMAND REFERENCE:
 
-📊 SYSTEM MONITORING:
-  sysinfo         - Complete system dashboard
-  perfmon         - Performance monitor
-  temps           - Temperature sensors
-
-🏊 ZFS MANAGEMENT:
-  zhealth         - Complete ZFS health check
-  zfsmaint        - ZFS maintenance helper
+ZFS:
   pools           - List ZFS pools with health
   datasets        - List ZFS datasets
   snapshots       - List ZFS snapshots
-  scrub           - Start pool scrub
+  scrub <pool>    - Start pool scrub
+  free            - FreeBSD memory info
 
-🌐 NETWORK TOOLS:
-  nettest         - Network connectivity test
-  netinfo         - Complete network info
-  myip            - Show external IP
-  ports           - Show listening ports
-  speedtest       - Internet speed test
+NETWORK:
+  myip / myipv4 / myipv6  - Show external IP
+  localip         - Show local IPs
+  netports        - Show listening ports
 
-🔧 SYSTEM ADMINISTRATION:
-  servstat        - Service status overview
-  jailmgr         - Jail/container manager
-  seccheck        - Security check
-  cleanup         - System cleanup
-  sysupdate       - Update helper
-
-📁 FILE OPERATIONS:
+FILE OPERATIONS:
   ff [name]       - Find files by name
   ftext [text]    - Find files by content
   extract [file]  - Extract any archive
-  backup [file]   - Quick backup
-  findfile [name] - Find with preview
+  backup [file]   - Quick backup with timestamp
 
-🎯 UTILITIES:
+UTILITIES:
   calc [expr]     - Calculator
-  genpass [len]   - Password generator
-  serve [port]    - HTTP file server
+  genpass [len]   - Password generator (default 20)
+  serve [port]    - HTTP file server (default 8000)
 
-📍 QUICK NAVIGATION:
+QUICK NAVIGATION:
   ~freenas        - /mnt/PoolONE/FreeNAS
   ~pools          - /mnt
   ~logs           - /var/log
   ~etc            - /etc
 
-✨ Press TAB for auto-completion on everything!
-🎨 Commands are color-coded as you type!
-🔍 Use Ctrl+R for history search!"
+PLUGIN MANAGEMENT:
+  list_plugins              - Show installed plugins
+  load_plugin <name>        - Load a plugin
+  install_plugin <git_url>  - Install from git
 
-	# End of configuration
+Press TAB for auto-completion. Ctrl+R for history search."
 }

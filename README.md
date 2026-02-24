@@ -5,13 +5,7 @@ Single-file build of [truenas-zshrc](https://github.com/kjanat/truenas-zshrc) â€
 ## Usage
 
 ```sh
-source <(curl -fsSL https://raw.githubusercontent.com/kjanat/truenas-zshrc/flat/truenas.zsh)
-```
-
-Or save locally:
-
-```sh
-curl -fsSL https://raw.githubusercontent.com/kjanat/truenas-zshrc/flat/truenas.zsh -o ~/.zshrc.truenas
+fetch -qo ~/.zshrc.truenas https://raw.githubusercontent.com/kjanat/truenas-zshrc/flat/truenas.zsh
 echo 'source ~/.zshrc.truenas' >> ~/.zshrc
 ```
 
@@ -20,4 +14,4 @@ echo 'source ~/.zshrc.truenas' >> ~/.zshrc
 This branch contains a single `truenas.zsh` with all `lib/*.zsh` modules inlined.
 Do not edit this branch directly â€” changes are overwritten on every push to [`master`](https://github.com/kjanat/truenas-zshrc/tree/master).
 
-Built from [`e379ab9`](https://github.com/kjanat/truenas-zshrc/commit/e379ab9).
+Built from [`6a23adc`](https://github.com/kjanat/truenas-zshrc/commit/6a23adc).
