@@ -47,7 +47,6 @@ export LANG=en_US.UTF-8     # Set default locale to UTF-8
 export LC_ALL=en_US.UTF-8   # Set all locale categories to UTF-8
 export EDITOR=nano          # Set default text editor
 export PAGER=less           # Set default pager
-export BROWSER=lynx         # Set default web browser
 export IGNORE_OSVERSION=yes # Ignore OS version checks
 
 # Enhanced PATH
