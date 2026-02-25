@@ -1425,3 +1425,4 @@ PLUGIN MANAGEMENT:
 
 Press TAB for auto-completion. Ctrl+R for history search."
 }
+
