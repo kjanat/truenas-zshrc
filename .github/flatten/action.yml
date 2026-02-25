@@ -1,0 +1,25 @@
+name: Flatten, deploy, and sync
+description: Inline lib/*.zsh into single file, deploy to flat branch, sync to gist
+
+inputs:
+  gist-pat:
+    description: PAT with gist scope for syncing to GitHub Gist
+    required: true
+  gist-id:
+    description: Target gist ID
+    required: false
+    default: "83b9a10c9f6869607235933015c07121"
+
+runs:
+  using: composite
+  steps:
+    - name: Flatten, deploy, and sync
+      uses: actions/github-script@v8
+      env:
+        ACTION_PATH: ${{ github.action_path }}
+        GIST_PAT: ${{ inputs.gist-pat }}
+        GIST_ID: ${{ inputs.gist-id }}
+      with:
+        script: |
+          const { default: run } = await import(`${process.env.ACTION_PATH}/flatten.mjs`)
+          await run({ github, context, core, exec })

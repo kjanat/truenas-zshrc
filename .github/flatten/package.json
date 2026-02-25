@@ -1,0 +1,14 @@
+{
+	"private": true,
+	"type": "module",
+	"scripts": {
+		"fmt": "bunx dprint fmt",
+		"typecheck": "tsgo --noEmit"
+	},
+	"devDependencies": {
+		"@actions/github-script": "github:actions/github-script",
+		"@types/node": ">=24",
+		"@typescript/native-preview": "latest"
+	},
+	"packageManager": "bun@1.3.9"
+}

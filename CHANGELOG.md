@@ -19,7 +19,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
-- CI workflow uses `popsiclestick/gist-sync-action@v1.2.0` instead of manual gist push
+- CI refactored into reusable composite action (`.github/flatten/`) with type-checked ESM module
+- Flatten logic moved from `scripts/flatten.sh` to `.github/flatten/flatten.mjs` (JSDoc-typed, `tsc --checkJs`)
 - CI captures `SOURCE_SHA`/`SOURCE_MSG` via `$GITHUB_ENV` before branch switch
 - CI `secrets` context in step `if:` replaced with job-level `env` (GitHub Actions requirement)
 - CI flat-branch README uses `fetch` instead of `curl` (FreeBSD-native)
@@ -46,6 +47,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Duplicate `rm`/`cp`/`mv`/`ln` alias definitions
 - Portable SSH completion function and dead `else` branch (ZSH always has `$ZSH_VERSION`)
 - Manual gist push step from CI workflow (replaced by action)
+- `scripts/flatten.sh` (replaced by inline JS in workflow)
+- `popsiclestick/gist-sync-action` dependency (replaced by `actions/github-script@v8`)
 
 ### Fixed
 

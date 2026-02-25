@@ -1,0 +1,26 @@
+name: Flatten to single file
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - "**/*.zsh"
+      - ".github/flatten/**"
+      - ".github/workflows/flat.yml"
+
+concurrency:
+  group: flatten
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+jobs:
+  flatten:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Flatten, deploy, and sync
+        uses: ./.github/flatten
+        with: { gist-pat: "${{ secrets.GIST_PAT }}" }
