@@ -491,7 +491,7 @@ _setup_ssh_completion() {
             fi
 
             # Remove port numbers [host]:port format
-            if [[ "$host_field" == "["* "]:"* ]]; then
+            if [[ "$host_field" == [[]*[]]:* ]]; then
                 host_field="${host_field#[}"
                 host_field="${host_field%]:*}"
             fi
@@ -514,7 +514,7 @@ _setup_ssh_completion() {
             if [[ "$host_field" == *","* ]]; then
                 host_field="${host_field%%,*}"
             fi
-            if [[ "$host_field" == "["* "]:"* ]]; then
+            if [[ "$host_field" == [[]*[]]:* ]]; then
                 host_field="${host_field#[}"
                 host_field="${host_field%]:*}"
             fi
@@ -591,7 +591,7 @@ _setup_ssh_completion_portable() {
                 [[ -z "$line" || "$line" == "#"* ]] && continue
                 local host_field="${line%% *}"
                 host_field="${host_field%%,*}"
-                if [[ "$host_field" == "["* "]:"* ]]; then
+                if [[ "$host_field" == [[]*[]]:* ]]; then
                     host_field="${host_field#[}"
                     host_field="${host_field%]:*}"
                 fi
