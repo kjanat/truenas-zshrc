@@ -20,6 +20,7 @@ runs:
         GIST_PAT: ${{ inputs.gist-pat }}
         GIST_ID: ${{ inputs.gist-id }}
       with:
+        github-token: ${{ inputs.gist-pat }}
         script: |
           const { default: run } = await import(`${process.env.ACTION_PATH}/flatten.mjs`)
           await run({ github, context, core, exec })
