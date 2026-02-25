@@ -14,4 +14,4 @@ echo 'source ~/.zshrc.truenas' >> ~/.zshrc
 This branch contains a single `truenas.zsh` with all `lib/*.zsh` modules inlined.
 Do not edit this branch directly — changes are overwritten on every push to [`master`](https://github.com/kjanat/truenas-zshrc/tree/master).
 
-Built from [`11004ef`](https://github.com/kjanat/truenas-zshrc/commit/11004ef).
+Built from [`f1dfdda`](https://github.com/kjanat/truenas-zshrc/commit/f1dfdda).
