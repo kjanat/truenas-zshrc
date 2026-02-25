@@ -1,7 +1,7 @@
 # ============================================================================
 # This file is AUTO-GENERATED — do not edit.
 # Source: https://github.com/kjanat/truenas-zshrc
-# Install: fetch -qo ~/.zshrc.truenas <raw URL of this file>
+# Install: fetch -qo ~/.zshrc.truenas https://raw.githubusercontent.com/kjanat/truenas-zshrc/flat/truenas.zsh
 # ============================================================================
 #!/usr/bin/env zsh
 # ██╗   ██╗██╗  ████████╗██╗███╗   ███╗ █████╗ ████████╗███████╗
