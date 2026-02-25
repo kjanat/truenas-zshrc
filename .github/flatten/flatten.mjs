@@ -11,11 +11,12 @@ const SOURCE_RE = /^source "\$\{0:A:h\}\/lib\/(.+\.zsh)"$/;
  * @returns {readonly string[]}
  */
 function headerLines(repoUrl) {
+	const rawUrl = `${repoUrl.replace('https://github.com/', 'https://raw.githubusercontent.com/')}/flat/truenas.zsh`;
 	return [
 		'# ============================================================================',
 		'# This file is AUTO-GENERATED — do not edit.',
 		`# Source: ${repoUrl}`,
-		'# Install: fetch -qo ~/.zshrc.truenas <raw URL of this file>',
+		`# Install: fetch -qo ~/.zshrc.truenas ${rawUrl}`,
 		'# ============================================================================',
 	];
 }
